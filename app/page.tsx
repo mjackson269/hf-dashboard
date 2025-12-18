@@ -31,8 +31,15 @@ export default function Page() {
 
   if (!data) {
     return (
-      <div className="p-6 text-yellow-600 dark:text-yellow-400">
-        No data available.
+      <div className=""space-y-6 p-6">
+    <SolarCard solar={data!.solar} />
+    <BandsTable bands={data!.bands} />
+    <ForecastTable />
+    <AlertsCard alerts={data!.alerts} />
+    <SummaryCard
+      highlights={data!.summary.highlights}
+      recommendations={data!.summary.recommendations}
+    />
       </div>
     );
   }
