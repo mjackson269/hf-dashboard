@@ -1,6 +1,8 @@
 "use client";
 
 import { useSolarData } from "./hooks/useSolarData";
+import type { SolarData } from "./hooks/useSolarData";
+
 import SolarCard from "./components/SolarCard";
 import BandsTable from "./components/BandsTable";
 import ForecastTable from "./components/ForecastTable";
@@ -8,7 +10,11 @@ import AlertsCard from "./components/AlertsCard";
 import SummaryCard from "./components/SummaryCard";
 
 export default function Page() {
-  const { data, loading, error } = useSolarData();
+  const { data, loading, error } = useSolarData() as {
+    data: SolarData | null;
+    loading: boolean;
+    error: string | null;
+  };
 
   if (loading) {
     return (
@@ -31,28 +37,26 @@ export default function Page() {
 
   if (!data) {
     return (
-      <div className=""space-y-6 p-6">
-    <SolarCard solar={data!.solar} />
-    <BandsTable bands={data!.bands} />
-    <ForecastTable />
-    <AlertsCard alerts={data!.alerts} />
-    <SummaryCard
-      highlights={data!.summary.highlights}
-      recommendations={data!.summary.recommendations}
-    />
+      <div className="p-6 text-yellow-600 dark:text-yellow-400">
+        No data available.
       </div>
     );
   }
 
+  // ✅ Turbopack requires this second narrowing
+  if (!data) return null;
+
+  const { solar, bands, alerts, summary } = data;
+
   return (
     <div className="space-y-6 p-6">
-      <SolarCard solar={data.solar} />
-      <BandsTable bands={data.bands} />
+      <SolarCard solar={solar} />
+      <BandsTable bands={bands} />
       <ForecastTable />
-      <AlertsCard alerts={data.alerts} />
+      <AlertsCard alerts={alerts} />
       <SummaryCard
-        highlights={data.summary.highlights}
-        recommendations={data.summary.recommendations}
+        highlights={summary.highlights}
+        recommendations={summary.recommendations}
       />
     </div>
   );
