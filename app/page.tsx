@@ -10,26 +10,17 @@ import SummaryCard from "./components/SummaryCard";
 export default function Page() {
   const { data, loading, error } = useSolarData();
 
-  // ✅ Loading skeleton
   if (loading) {
     return (
       <div className="space-y-6 p-6">
-        {/* Card skeleton */}
         <div className="p-4 rounded-lg shadow bg-slate-200 dark:bg-slate-700 animate-pulse h-32" />
-
-        {/* Table skeleton */}
         <div className="p-4 rounded-lg shadow bg-slate-200 dark:bg-slate-700 animate-pulse h-48" />
-
-        {/* Forecast skeleton */}
         <div className="p-4 rounded-lg shadow bg-slate-200 dark:bg-slate-700 animate-pulse h-24" />
-
-        {/* Alerts skeleton */}
         <div className="p-4 rounded-lg shadow bg-slate-200 dark:bg-slate-700 animate-pulse h-32" />
       </div>
     );
   }
 
-  // ✅ Error state
   if (error) {
     return (
       <div className="p-6 text-red-600 dark:text-red-400">
@@ -38,7 +29,14 @@ export default function Page() {
     );
   }
 
-  // ✅ Main dashboard
+  if (!data) {
+    return (
+      <div className="p-6 text-yellow-600 dark:text-yellow-400">
+        No data available.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-6">
       <SolarCard solar={data.solar} />
