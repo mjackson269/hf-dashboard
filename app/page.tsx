@@ -43,20 +43,15 @@ export default function Page() {
     );
   }
 
-  // ✅ Turbopack requires this second narrowing
-  if (!data) return null;
-
-  const { solar, bands, alerts, summary } = data;
-
   return (
     <div className="space-y-6 p-6">
-      <SolarCard solar={solar} />
-      <BandsTable bands={bands} />
+      <SolarCard solar={data!.solar} />
+      <BandsTable bands={data!.bands} />
       <ForecastTable />
-      <AlertsCard alerts={alerts} />
+      <AlertsCard alerts={data!.alerts} />
       <SummaryCard
-        highlights={summary.highlights}
-        recommendations={summary.recommendations}
+        highlights={data!.summary.highlights}
+        recommendations={data!.summary.recommendations}
       />
     </div>
   );
