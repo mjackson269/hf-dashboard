@@ -1,7 +1,7 @@
 "use client";
 
-import { useSolarData } from "./hooks/useSolarData.tsx";
-import type { SolarData } from "./hooks/useSolarData.tsx";
+import { useSolarData } from "./hooks/useSolarData";
+import type { SolarData } from "./hooks/useSolarData";
 
 import SolarCard from "./components/SolarCard";
 import BandsTable from "./components/BandsTable";
