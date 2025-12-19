@@ -1,17 +1,12 @@
 "use client";
 
-HEAD
-import { useSolarData } from "./hooks/useSolarData";
-import type { SolarData } from "./hooks/useSolarData";
-=======
 import { useEffect, useState } from "react";
-eef63d3 (Fix useSolarData hook)
 
 export type SolarData = {
   solar: {
-    sn: number;          // sunspot number
-    sfi: number;         // solar flux index
-    kp: number;          // Kp index
+    sn: number;
+    sfi: number;
+    kp: number;
     ssnDescription: string;
     kpDescription: string;
   };
@@ -51,7 +46,6 @@ export function useSolarData(): UseSolarDataResult {
         setLoading(true);
         setError(null);
 
-        // Adjust this endpoint name if your API is different
         const res = await fetch("/api/current", { cache: "no-store" });
 
         if (!res.ok) {
