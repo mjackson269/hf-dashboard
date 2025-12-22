@@ -1,63 +1,22 @@
-type ForecastHour = {
-  time: string;
-  SFI: number;
-  Kp: number;
-  MUF: number;
-};
+export async function GET(request: Request) {
+  try {
+    // Dynamically resolve the base URL for production-safe fetch
+    const baseUrl = request.nextUrl.origin;
 
-export async function GET() {
-  const [scoreRes, forecastRes, alertsRes] = await Promise.all([
-    fetch("http://localhost:3000/api/score"),
-    fetch("http://localhost:3000/api/forecast"),
-    fetch("http://localhost:3000/api/alerts"),
-  ]);
+    // Fetch the markdown summary from the internal API
+    const res = await fetch(`${baseUrl}/api/summary`);
 
-  const score = await scoreRes.json();
-  const forecast = await forecastRes.json();
-  const alerts = await alertsRes.json();
+    if (!res.ok) {
+      throw new Error(`Failed to fetch summary: ${res.status}`);
+    }
 
-  const markdown = `
-## HF Propagation Summary — ${new Date().toLocaleDateString("en-GB")}
+    const markdown = await res.text();
 
-**Current Conditions:**  
-- SFI: ${score.details.SFI}  
-- Kp Index: ${score.details.Kp}  
-- MUF: ${score.details.MUF} MHz  
-- Propagation Score: ${score.value} — ${score.label}
-
-**Forecast Highlights:**  
-| Time   | SFI | Kp | MUF (MHz) |
-|--------|-----|----|-----------|
-${forecast.hours
-  .map(
-    (f: ForecastHour) =>
-      `| ${f.time} | ${f.SFI} | ${f.Kp} | ${f.MUF} |`
-  )
-  .join("\n")}
-
-**Active Alerts:**  
-${
-  alerts.active.length === 0
-    ? "- None"
-    : alerts.active
-        .map(
-          (alert: any) => `
-- **${alert.type} — ${alert.level}**  
-  ${alert.message}  
-  *Issued: ${new Date(alert.issued).toLocaleString("en-GB")}*
-`
-        )
-        .join("\n")
-}
-
-**UK Propagation Notes:**  
-Conditions remain favourable across 20m–40m bands.  
-Expect stable daytime propagation and mild evening absorption.
-`;
-
-  return new Response(markdown, {
-    headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-    },
-  });
+    return new Response(markdown, {
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  } catch (err) {
+    console.error("AI summary error:", err);
+    return new Response("Error generating summary", { status: 500 });
+  }
 }
