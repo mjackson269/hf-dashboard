@@ -1,3 +1,10 @@
+type ForecastHour = {
+  time: string;
+  SFI: number;
+  Kp: number;
+  MUF: number;
+};
+
 export async function GET() {
   const [scoreRes, forecastRes, alertsRes] = await Promise.all([
     fetch("http://localhost:3000/api/score"),
@@ -21,14 +28,27 @@ export async function GET() {
 **Forecast Highlights:**  
 | Time   | SFI | Kp | MUF (MHz) |
 |--------|-----|----|-----------|
-${forecast.hours.map(f => `| ${f.time} | ${f.SFI} | ${f.Kp} | ${f.MUF} |`).join("\n")}
+${forecast.hours
+  .map(
+    (f: ForecastHour) =>
+      `| ${f.time} | ${f.SFI} | ${f.Kp} | ${f.MUF} |`
+  )
+  .join("\n")}
 
 **Active Alerts:**  
-${alerts.active.length === 0 ? "- None" : alerts.active.map(alert => `
+${
+  alerts.active.length === 0
+    ? "- None"
+    : alerts.active
+        .map(
+          (alert: any) => `
 - **${alert.type} — ${alert.level}**  
   ${alert.message}  
   *Issued: ${new Date(alert.issued).toLocaleString("en-GB")}*
-`).join("\n")}
+`
+        )
+        .join("\n")
+}
 
 **UK Propagation Notes:**  
 Conditions remain favourable across 20m–40m bands.  
