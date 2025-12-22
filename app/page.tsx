@@ -1,64 +1,36 @@
-"use client";
+import SummaryPanel from "../components/SummaryPanel";
+import AISummaryPanel from "../components/AISummaryPanel";
+import CurrentPanel from "../components/CurrentPanel";
+import ScorePanel from "../components/ScorePanel";
+import ForecastPanel from "../components/ForecastPanel";
+import AlertsPanel from "../components/AlertsPanel";
 
-import { useSolarData } from "./hooks/useSolarData";
-import type { SolarData } from "./hooks/useSolarData";
-
-import SolarCard from "./components/SolarCard";
-import BandsTable from "./components/BandsTable";
-import ForecastTable from "./components/ForecastTable";
-import AlertsCard from "./components/AlertsCard";
-import SummaryCard from "./components/SummaryCard";
-
-export default function Page() {
-  const result = useSolarData() as {
-    data: SolarData | null;
-    loading: boolean;
-    error: string | null;
-  };
-
-  const { data, loading, error } = result;
-
-  if (loading) {
-    return (
-      <div className="space-y-6 p-6">
-        <div className="p-4 rounded-lg shadow bg-slate-200 dark:bg-slate-700 animate-pulse h-32" />
-        <div className="p-4 rounded-lg shadow bg-slate-200 dark:bg-slate-700 animate-pulse h-48" />
-        <div className="p-4 rounded-lg shadow bg-slate-200 dark:bg-slate-700 animate-pulse h-24" />
-        <div className="p-4 rounded-lg shadow bg-slate-200 dark:bg-slate-700 animate-pulse h-32" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6 text-red-600 dark:text-red-400">
-        Error loading data: {error}
-      </div>
-    );
-  }
-
-  // ✅ Hard stop: if data is null, we return early.
-  if (!data) {
-    return (
-      <div className="p-6 text-yellow-600 dark:text-yellow-400">
-        No data available.
-      </div>
-    );
-  }
-
-  // ✅ At this point, TypeScript now sees `data` as DEFINITELY non-null.
-  const { solar, bands, alerts, summary } = data;
-
+export default function Dashboard() {
   return (
-    <div className="space-y-6 p-6">
-      <SolarCard solar={solar} />
-      <BandsTable bands={bands} />
-      <ForecastTable />
-      <AlertsCard alerts={alerts} />
-      <SummaryCard
-        highlights={summary.highlights}
-        recommendations={summary.recommendations}
-      />
-    </div>
+    <main className="min-h-screen bg-neutral-950 text-white p-6">
+      <h1 className="text-3xl font-bold mb-6">HF Propagation Dashboard</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        {/* AI-Generated Natural Language Summary — now at the top */}
+        <AISummaryPanel />
+
+        {/* Current Conditions */}
+        <CurrentPanel />
+
+        {/* Propagation Score */}
+        <ScorePanel />
+
+        {/* Alerts */}
+        <AlertsPanel />
+
+        {/* Forecast */}
+        <ForecastPanel />
+
+        {/* Markdown Summary */}
+        <SummaryPanel />
+
+      </div>
+    </main>
   );
 }
