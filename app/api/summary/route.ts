@@ -1,6 +1,10 @@
-export async function GET(request: Request) {
+import { headers } from "next/headers";
+
+export async function GET() {
   try {
-    const baseUrl = request.nextUrl.origin;
+    const host = headers().get("host");
+    const protocol = process.env.VERCEL ? "https" : "http";
+    const baseUrl = `${protocol}://${host}`;
 
     const [currentRes, scoreRes, alertsRes, forecastRes] = await Promise.all([
       fetch(`${baseUrl}/api/current`),
