@@ -1,22 +1,34 @@
 export async function GET(request: Request) {
   try {
-    // Dynamically resolve the base URL for production-safe fetch
     const baseUrl = request.nextUrl.origin;
 
-    // Fetch the markdown summary from the internal API
-    const res = await fetch(`${baseUrl}/api/summary`);
+    const [currentRes, scoreRes, alertsRes, forecastRes] = await Promise.all([
+      fetch(`${baseUrl}/api/current`),
+      fetch(`${baseUrl}/api/score`),
+      fetch(`${baseUrl}/api/alerts`),
+      fetch(`${baseUrl}/api/forecast`)
+    ]);
 
-    if (!res.ok) {
-      throw new Error(`Failed to fetch summary: ${res.status}`);
+    if (!currentRes.ok || !scoreRes.ok || !alertsRes.ok || !forecastRes.ok) {
+      throw new Error("One or more internal API calls failed");
     }
 
-    const markdown = await res.text();
+    const current = await currentRes.json();
+    const score = await scoreRes.json();
+    const alerts = await alertsRes.json();
+    const forecast = await forecastRes.json();
 
-    return new Response(markdown, {
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    const summary = JSON.stringify(
+      { current, score, alerts, forecast },
+      null,
+      2
+    );
+
+    return new Response(summary, {
+      headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("AI summary error:", err);
+    console.error("Summary route error:", err);
     return new Response("Error generating summary", { status: 500 });
   }
 }
