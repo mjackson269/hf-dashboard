@@ -2,10 +2,15 @@ import { headers } from "next/headers";
 
 export async function GET() {
   try {
-    const host = headers().get("host");
+    // Next.js 16: headers() is async
+    const h = await headers();
+    const host = h.get("host");
+
+    // Use https on Vercel, http locally
     const protocol = process.env.VERCEL ? "https" : "http";
     const baseUrl = `${protocol}://${host}`;
 
+    // Fetch the internal summary endpoint
     const res = await fetch(`${baseUrl}/api/summary`);
 
     if (!res.ok) {
