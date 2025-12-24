@@ -20,11 +20,12 @@ export async function GET() {
       fetch(urls.forecast),
     ]);
 
-    const names = ["current", "score", "alerts", "forecast"];
+    const names = ["current", "score", "alerts", "forecast"] as const;
 
     responses.forEach((res, i) => {
       if (!res.ok) {
-        console.error(`❌ ${names[i]} failed:`, urls[names[i]], res.status);
+        const key = names[i];
+        console.error(`❌ ${key} failed:`, urls[key], res.status);
       }
     });
 
