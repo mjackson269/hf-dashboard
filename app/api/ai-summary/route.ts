@@ -1,16 +1,11 @@
-import { headers } from "next/headers";
-
 export async function GET() {
   try {
-    // Next.js 16: headers() is async
-    const h = await headers();
-    const host = h.get("host");
+    const baseUrl = process.env.BASE_URL;
 
-    // Use https on Vercel, http locally
-    const protocol = process.env.VERCEL ? "https" : "http";
-    const baseUrl = `${protocol}://${host}`;
+    if (!baseUrl) {
+      throw new Error("BASE_URL environment variable is missing");
+    }
 
-    // Fetch the internal summary endpoint
     const res = await fetch(`${baseUrl}/api/summary`);
 
     if (!res.ok) {

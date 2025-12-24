@@ -1,10 +1,10 @@
-import { headers } from "next/headers";
-
 export async function GET() {
   try {
-    const host = headers().get("host");
-    const protocol = process.env.VERCEL ? "https" : "http";
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = process.env.BASE_URL;
+
+    if (!baseUrl) {
+      throw new Error("BASE_URL environment variable is missing");
+    }
 
     const [currentRes, scoreRes, alertsRes, forecastRes] = await Promise.all([
       fetch(`${baseUrl}/api/current`),
@@ -22,15 +22,10 @@ export async function GET() {
     const alerts = await alertsRes.json();
     const forecast = await forecastRes.json();
 
-    const summary = JSON.stringify(
-      { current, score, alerts, forecast },
-      null,
-      2
+    return new Response(
+      JSON.stringify({ current, score, alerts, forecast }, null, 2),
+      { headers: { "Content-Type": "application/json" } }
     );
-
-    return new Response(summary, {
-      headers: { "Content-Type": "application/json" },
-    });
   } catch (err) {
     console.error("Summary route error:", err);
     return new Response("Error generating summary", { status: 500 });
