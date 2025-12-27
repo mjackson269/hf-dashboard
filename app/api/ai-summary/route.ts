@@ -21,10 +21,9 @@ export async function GET() {
     const alerts = await alertsRes.json();
     const forecast = await forecastRes.json();
 
-    // -------------------------------
-    // BEST BAND RIGHT NOW LOGIC
-    // -------------------------------
-
+    // ----------------------------------------------------
+    // BAND DOWNGRADE LOGIC
+    // ----------------------------------------------------
     function downgradeBand(band: string) {
       const order = ["10m", "12m", "15m", "17m", "20m", "30m", "40m"];
       const idx = order.indexOf(band);
@@ -33,6 +32,9 @@ export async function GET() {
       return order[next];
     }
 
+    // ----------------------------------------------------
+    // BEST BAND LOGIC
+    // ----------------------------------------------------
     function getBestBand(current: any, alerts: any) {
       const muf = current.muf;
       const kp = current.kp;
@@ -76,10 +78,63 @@ export async function GET() {
 
     const bestBand = getBestBand(current, alerts);
 
-    // -------------------------------
-    // AI PROMPT (SAFE STRING CONCAT)
-    // -------------------------------
+    // ----------------------------------------------------
+    // WHY THIS BAND? (NEW)
+    // ----------------------------------------------------
+    function getBestBandReason(current: any, alerts: any, bestBand: string) {
+      const reasons: string[] = [];
+      const { sfi, kp, muf } = current;
 
+      // SFI
+      if (sfi >= 140) {
+        reasons.push("High solar flux is boosting ionization");
+      } else if (sfi >= 120) {
+        reasons.push("Solar flux is healthy enough for stable daytime propagation");
+      }
+
+      // MUF
+      if (muf >= 22) {
+        reasons.push(`MUF at ${muf} MHz supports higher bands`);
+      } else if (muf >= 18) {
+        reasons.push(`MUF supports mid‑range bands like 17m and 20m`);
+      }
+
+      // Kp
+      if (kp <= 3) {
+        reasons.push("Low geomagnetic activity keeps paths stable");
+      } else {
+        reasons.push("Elevated Kp is degrading higher‑frequency performance");
+      }
+
+      // Alerts
+      const hasGStorm = alerts.active.some((a: any) =>
+        a.type.includes("Geomagnetic")
+      );
+      const hasFlare = alerts.active.some((a: any) =>
+        a.type.includes("Flare")
+      );
+
+      if (hasGStorm) {
+        reasons.push("Geomagnetic storm conditions are weakening low bands");
+      }
+
+      if (hasFlare) {
+        reasons.push("Solar flare absorption is affecting higher bands");
+      }
+
+      // Band‑specific
+      if (bestBand === "30m") {
+        reasons.push("30m remains reliable even during disturbed conditions");
+      }
+
+      return reasons.join(". ") + ".";
+    }
+
+    const reason = getBestBandReason(current, alerts, bestBand);
+
+    // ----------------------------------------------------
+    // AI PROMPT
+    // ----------------------------------------------------
     const prompt =
       "Write a short, natural, human-readable HF radio propagation briefing. " +
       "Do NOT use headings or sections. Do NOT format like a report. " +
@@ -121,10 +176,9 @@ export async function GET() {
       "Focus on what bands will work well, what to avoid, and what to expect over the next 12–24 hours. " +
       "Keep it human. Keep it simple. Keep it short.";
 
-    // -------------------------------
+    // ----------------------------------------------------
     // DEEPSEEK CALL
-    // -------------------------------
-
+    // ----------------------------------------------------
     const deepseekRes = await fetch(
       "https://api.deepseek.com/v1/chat/completions",
       {
@@ -156,8 +210,10 @@ export async function GET() {
 
     return NextResponse.json({
       markdown: summary,
-      bestBand: bestBand
+      bestBand: bestBand,
+      reason: reason
     });
+
   } catch (err) {
     console.error("AI summary error:", err);
     return NextResponse.json({ markdown: "AI summary unavailable." });

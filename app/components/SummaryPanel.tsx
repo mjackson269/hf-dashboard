@@ -2,6 +2,7 @@
 
 import { useSummaryData } from "../hooks/useSummaryData";
 import ReactMarkdown from "react-markdown";
+import Tooltip from "./Tooltip";
 
 export default function SummaryPanel() {
   const { data, isLoading, isError } = useSummaryData();
@@ -22,8 +23,11 @@ export default function SummaryPanel() {
     );
   }
 
-  // Pick a colour based on band
+  // Correct variables
   const band = data.bestBand;
+  const reason = data.reason;
+
+  // Colour based on band
   const bandColor =
     band === "10m" ? "bg-green-600" :
     band === "12m" ? "bg-emerald-600" :
@@ -40,9 +44,10 @@ export default function SummaryPanel() {
 
         {/* Best Band Badge */}
         <span
-          className={`px-3 py-1 rounded-full text-sm font-semibold ${bandColor}`}
+          className={`px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-2 ${bandColor}`}
         >
           Best Band: {band}
+          <Tooltip text={reason} />
         </span>
       </div>
 
