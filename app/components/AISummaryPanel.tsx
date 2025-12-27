@@ -27,7 +27,7 @@ export default function AISummaryPanel() {
       <h2 className="text-xl font-semibold mb-2">AI‑Generated Summary</h2>
 
       <div className="prose prose-invert max-w-none">
-        <ReactMarkdown>{data.markdown}</ReactMarkdown>
+        <ReactMarkdown>{data}</ReactMarkdown>
       </div>
     </div>
   );
