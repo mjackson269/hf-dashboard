@@ -17,51 +17,28 @@ export async function GET() {
       fetch(`${baseUrl}/api/forecast`, { cache: "no-store" })
     ]);
 
+    // Check for failures
     if (!currentRes.ok || !scoreRes.ok || !alertsRes.ok || !forecastRes.ok) {
+      console.error("❌ One or more internal API calls failed:", {
+        current: currentRes.status,
+        score: scoreRes.status,
+        alerts: alertsRes.status,
+        forecast: forecastRes.status
+      });
       throw new Error("One or more internal API calls failed");
     }
 
+    // Parse JSON
     const current = await currentRes.json();
     const score = await scoreRes.json();
     const alerts = await alertsRes.json();
     const forecast = await forecastRes.json();
 
-    // Build markdown summary
-    const markdown = `
-# HF Propagation Summary
-
-## Current Conditions
-- **SFI:** ${current.sfi}
-- **Kp Index:** ${current.kp}
-- **MUF:** ${current.muf} MHz
-
-## Propagation Score
-**${score.value} — ${score.label}**
-
-## Active Alerts
-${alerts.active.length > 0
-  ? alerts.active
-      .map(
-        (a) =>
-          `- **${a.type} (${a.level})** — ${a.message} (Issued: ${new Date(
-            a.issued
-          ).toLocaleString()})`
-      )
-      .join("\n")
-  : "No active alerts."}
-
-## 24‑Hour Forecast
-${forecast.hours
-  .map(
-    (h) =>
-      `- **${h.time}** — SFI ${h.SFI}, Kp ${h.Kp}, MUF ${h.MUF} MHz`
-  )
-  .join("\n")}
-`;
-
-    return new Response(JSON.stringify({ markdown }), {
-      headers: { "Content-Type": "application/json" }
-    });
+    // Return aggregated summary
+    return new Response(
+      JSON.stringify({ current, score, alerts, forecast }, null, 2),
+      { headers: { "Content-Type": "application/json" } }
+    );
 
   } catch (err) {
     console.error("Summary route error:", err);

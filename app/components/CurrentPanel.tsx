@@ -1,6 +1,6 @@
 "use client";
 
-import { useCurrentData } from "@/hooks/useCurrentData";
+import { useCurrentData } from "../hooks/useCurrentData";
 
 export default function CurrentPanel() {
   const { data, isLoading, isError } = useCurrentData();
