@@ -1,3 +1,5 @@
+import "./globals.css";
+
 export const metadata = {
   title: "HF Dashboard",
   description: "Live HF propagation conditions",
