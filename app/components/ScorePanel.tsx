@@ -12,6 +12,7 @@ export default function ScorePanel() {
   return (
     <div className={panelContainer}>
       <h2 className={panelTitle}>Propagation Score</h2>
+
       <div className="text-neutral-400 text-sm">
         Score data is not available in this version.
       </div>
