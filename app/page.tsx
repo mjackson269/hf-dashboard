@@ -9,7 +9,7 @@ import ForecastPanel from "./components/ForecastPanel";
 import AlertsPanel from "./components/AlertsPanel";
 import QuickTake from "./components/QuickTake";
 import Footer from "./components/Footer";
-import { gridGap } from "./styles/designSystem";
+import { gridGap } from "./lib/designSystem";
 
 export default function Home() {
   return (

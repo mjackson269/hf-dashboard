@@ -1,6 +1,6 @@
 "use client";
 
-import { card, panelTitle, badge, subtleText } from "../styles/designSystem";
+import { card, panelTitle, badge, subtleText } from "../lib/designSystem";
 
 export default function AlertsPanel() {
   // Replace with your real alerts fetch/hook

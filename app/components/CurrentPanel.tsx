@@ -2,7 +2,7 @@
 
 import { useSummaryData } from "../hooks/useSummaryData";
 import Tooltip from "./Tooltip";
-import { card, panelTitle, subtleText } from "../styles/designSystem";
+import { card, panelTitle, subtleText } from "../lib/designSystem";
 
 export default function CurrentPanel() {
   const { data, isLoading, isError } = useSummaryData();

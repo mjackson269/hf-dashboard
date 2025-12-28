@@ -1,6 +1,6 @@
 "use client";
 
-import { card, panelTitle } from "../styles/designSystem";
+import { card, panelTitle } from "../lib/designSystem";
 
 export default function ForecastPanel() {
   // Replace with your real forecast data

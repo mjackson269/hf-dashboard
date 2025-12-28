@@ -1,6 +1,6 @@
 "use client";
 
-import { subtleText } from "../styles/designSystem";
+import { subtleText } from "../lib/designSystem";
 
 export default function Footer() {
   const version = "v0.9.0"; // Update manually when releasing new versions

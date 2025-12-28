@@ -1,6 +1,6 @@
 "use client";
 
-import { card, panelTitle, subtleText } from "../styles/designSystem";
+import { card, panelTitle, subtleText } from "../lib/designSystem";
 import { useSummaryData } from "../hooks/useSummaryData";
 
 export default function ScorePanel() {

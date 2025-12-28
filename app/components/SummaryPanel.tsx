@@ -2,7 +2,7 @@
 
 import { useSummaryData } from "../hooks/useSummaryData";
 import ReactMarkdown from "react-markdown";
-import { card, panelTitle, bodyText } from "../styles/designSystem";
+import { card, panelTitle, bodyText } from "../lib/designSystem";
 
 export default function SummaryPanel() {
   const { data, isLoading, isError } = useSummaryData();

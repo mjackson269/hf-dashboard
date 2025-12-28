@@ -2,7 +2,7 @@
 
 import { useSummaryData } from "../hooks/useSummaryData";
 import Tooltip from "./Tooltip";
-import { card, badge } from "../styles/designSystem";
+import { card, badge } from "../lib/designSystem";
 import TrendIndicator from "./TrendIndicator";
 
 
