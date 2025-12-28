@@ -1,4 +1,3 @@
-// Force Vercel rebuild
 // app/api/ai-summary/route.ts
 
 type CurrentData = {
