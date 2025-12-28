@@ -1,5 +1,7 @@
 "use client";
 
+import ForceCSS from "./force-css";
+
 import HeroHeader from "./components/HeroHeader";
 import StatusBar from "./components/StatusBar";
 import SummaryPanel from "./components/SummaryPanel";
@@ -13,28 +15,33 @@ import { gridGap } from "./lib/designSystem";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-neutral-950 text-white p-6 flex flex-col">
+    <>
+      {/* Force Tailwind CSS to be emitted in production */}
+      <ForceCSS />
 
-      {/* ⭐ New Hero Header */}
-      <HeroHeader />
-      
-      {/* Modern Status Bar */}
-      <StatusBar />
+      <main className="min-h-screen bg-neutral-950 text-white p-6 flex flex-col">
 
-      {/* Quick Take */}
-      <QuickTake />
+        {/* ⭐ New Hero Header */}
+        <HeroHeader />
 
-      {/* Main Grid */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${gridGap}`}>
-        <SummaryPanel />
-        <CurrentPanel />
-        <ScorePanel />
-        <AlertsPanel />
-        <ForecastPanel />
-      </div>
+        {/* Modern Status Bar */}
+        <StatusBar />
 
-      {/* Footer */}
-      <Footer />
-    </main>
+        {/* Quick Take */}
+        <QuickTake />
+
+        {/* Main Grid */}
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${gridGap}`}>
+          <SummaryPanel />
+          <CurrentPanel />
+          <ScorePanel />
+          <AlertsPanel />
+          <ForecastPanel />
+        </div>
+
+        {/* Footer */}
+        <Footer />
+      </main>
+    </>
   );
 }
