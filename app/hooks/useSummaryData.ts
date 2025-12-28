@@ -23,6 +23,7 @@ export function useSummaryData() {
       reason: data.reason,
       quickTake: data.quickTake,
       severity: data.severity,
+      score: data.score, // ⭐ NEW — now ScorePanel receives the score
 
       // Current values
       sfiEstimated: current.sfiEstimated,

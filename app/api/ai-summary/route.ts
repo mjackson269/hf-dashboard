@@ -64,6 +64,26 @@ function determineSeverity(
   return "stable";
 }
 
+// ⭐ NEW — Propagation Score
+function calculatePropagationScore(current: CurrentData): number {
+  let score = 50; // baseline
+
+  // MUF trend (strongest indicator)
+  if (current.muf > current.mufPrev) score += 20;
+  if (current.muf < current.mufPrev) score -= 20;
+
+  // Kp trend (negative indicator)
+  if (current.kp < current.kpPrev) score += 15;
+  if (current.kp > current.kpPrev) score -= 15;
+
+  // SFI trend (positive but weaker)
+  if (current.sfiEstimated > current.sfiEstimatedPrev) score += 10;
+  if (current.sfiEstimated < current.sfiEstimatedPrev) score -= 10;
+
+  // Clamp to 0–100
+  return Math.max(0, Math.min(100, score));
+}
+
 // Placeholder AI quick take generator
 async function generateAIQuickTake(ruleSignals: string): Promise<string> {
   return `Quick take: ${ruleSignals.charAt(0).toUpperCase()}${ruleSignals.slice(
@@ -80,29 +100,34 @@ export async function GET() {
 
   const current = (await currentRes.json()) as CurrentData;
 
-  // Build rule-based signals
+  // Rule-based signals
   const ruleSignals = generateRuleBasedSignals(current);
 
   // AI-style Quick Take
   const aiQuickTake = await generateAIQuickTake(ruleSignals);
 
-  // Severity score
+  // Severity
   const severity = determineSeverity(current);
 
-  // Placeholder markdown summary
+  // ⭐ NEW — Propagation Score
+  const score = calculatePropagationScore(current);
+
+  // Your existing AI summary (unchanged)
   const markdown = `
 Alright, conditions are looking pretty good overall. The 30-meter band is your best bet right now, solid and reliable. Higher bands like 20m and 17m should also be working well for daylight paths. Watch out for the lower bands though, 80 and 160 meters are taking a hit from some geomagnetic activity, so they'll be noisy and weak. There was a moderate solar flare, so if you're working polar paths, you might see some brief dropouts. Looking ahead, the higher bands will slowly fade a bit later today as the MUF drops, but 30m should hold up. Things settle back down overnight. So, stick to the middle bands today and you'll do fine.
-`.trim();
+  `.trim();
 
   const bestBand = "30m";
   const reason =
     "30m is currently the most reliable mix of MUF support and resilience to geomagnetic noise for UK daytime paths.";
 
+  // ⭐ FINAL RESPONSE — now includes score
   return Response.json({
     markdown,
     bestBand,
     reason,
     quickTake: aiQuickTake,
     severity,
+    score,
   });
 }
