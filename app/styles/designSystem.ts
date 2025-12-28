@@ -3,6 +3,9 @@
 export const card =
   "bg-neutral-900 text-white p-4 rounded-lg shadow-md border border-neutral-800";
 
+export const panelContainer =
+  "bg-neutral-900 p-4 rounded-lg border border-neutral-800 shadow";
+
 export const panelTitle =
   "text-xl font-semibold mb-3 tracking-tight";
 
