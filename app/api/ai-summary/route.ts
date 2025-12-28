@@ -1,221 +1,108 @@
-import { NextResponse } from "next/server";
+// app/api/ai-summary/route.ts
+
+type CurrentData = {
+  sfiEstimated: number;
+  sfiEstimatedPrev: number;
+  sfiAdjusted: number;
+  sfiAdjustedPrev: number;
+  kp: number;
+  kpPrev: number;
+  muf: number;
+  mufPrev: number;
+};
+
+function generateRuleBasedSignals(current: CurrentData): string {
+  const signals: string[] = [];
+
+  // MUF trends
+  if (current.muf > current.mufPrev) {
+    signals.push("higher bands are improving as MUF rises");
+  } else if (current.muf < current.mufPrev) {
+    signals.push("higher bands are weakening as MUF falls");
+  }
+
+  // Kp trends
+  if (current.kp > current.kpPrev) {
+    signals.push("geomagnetic activity is increasing, raising noise levels");
+  } else if (current.kp < current.kpPrev) {
+    signals.push("geomagnetic conditions are easing, reducing noise");
+  }
+
+  // SFI trends
+  if (current.sfiEstimated > current.sfiEstimatedPrev) {
+    signals.push("solar flux is strengthening, supporting higher bands");
+  } else if (current.sfiEstimated < current.sfiEstimatedPrev) {
+    signals.push("solar flux is dipping slightly, softening higher-band support");
+  }
+
+  if (signals.length === 0) {
+    return "Conditions are broadly stable across the HF bands.";
+  }
+
+  return signals.join("; ");
+}
+
+function determineSeverity(
+  current: CurrentData
+): "improving" | "stable" | "degrading" {
+  let score = 0;
+
+  // MUF (strongest)
+  if (current.muf > current.mufPrev) score += 2;
+  if (current.muf < current.mufPrev) score -= 2;
+
+  // Kp (negative)
+  if (current.kp < current.kpPrev) score += 1;
+  if (current.kp > current.kpPrev) score -= 1;
+
+  // SFI (positive but weaker)
+  if (current.sfiEstimated > current.sfiEstimatedPrev) score += 1;
+  if (current.sfiEstimated < current.sfiEstimatedPrev) score -= 1;
+
+  if (score >= 2) return "improving";
+  if (score <= -2) return "degrading";
+  return "stable";
+}
+
+// Placeholder AI quick take generator
+async function generateAIQuickTake(ruleSignals: string): Promise<string> {
+  return `Quick take: ${ruleSignals.charAt(0).toUpperCase()}${ruleSignals.slice(
+    1
+  )}`;
+}
 
 export async function GET() {
-  try {
-    const baseUrl = process.env.BASE_URL;
-    const apiKey = process.env.DEEPSEEK_API_KEY;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-    if (!baseUrl) throw new Error("BASE_URL is missing");
-    if (!apiKey) throw new Error("DEEPSEEK_API_KEY is missing");
+  const currentRes = await fetch(`${baseUrl}/api/current`, {
+    cache: "no-store",
+  });
 
-    // Fetch internal data
-    const [currentRes, scoreRes, alertsRes, forecastRes] = await Promise.all([
-      fetch(baseUrl + "/api/current", { cache: "no-store" }),
-      fetch(baseUrl + "/api/score", { cache: "no-store" }),
-      fetch(baseUrl + "/api/alerts", { cache: "no-store" }),
-      fetch(baseUrl + "/api/forecast", { cache: "no-store" })
-    ]);
+  const current = (await currentRes.json()) as CurrentData;
 
-    const current = await currentRes.json();
-    const score = await scoreRes.json();
-    const alerts = await alertsRes.json();
-    const forecast = await forecastRes.json();
+  // Build rule-based signals
+  const ruleSignals = generateRuleBasedSignals(current);
 
-    // ----------------------------------------------------
-    // BAND DOWNGRADE LOGIC
-    // ----------------------------------------------------
-    function downgradeBand(band: string) {
-      const order = ["10m", "12m", "15m", "17m", "20m", "30m", "40m"];
-      const idx = order.indexOf(band);
-      const next = idx + 1;
-      if (next >= order.length) return order[order.length - 1];
-      return order[next];
-    }
+  // AI-style Quick Take
+  const aiQuickTake = await generateAIQuickTake(ruleSignals);
 
-    // ----------------------------------------------------
-    // BEST BAND LOGIC
-    // ----------------------------------------------------
-    function getBestBand(current: any, alerts: any) {
-      const muf = current.muf;
-      const kp = current.kp;
+  // Severity score
+  const severity = determineSeverity(current);
 
-      let band = "30m";
-      if (muf >= 28) band = "10m";
-      else if (muf >= 24) band = "12m";
-      else if (muf >= 21) band = "15m";
-      else if (muf >= 18) band = "17m";
-      else if (muf >= 14) band = "20m";
+  // Placeholder markdown summary
+  const markdown = `
+Alright, conditions are looking pretty good overall. The 30-meter band is your best bet right now, solid and reliable. Higher bands like 20m and 17m should also be working well for daylight paths. Watch out for the lower bands though, 80 and 160 meters are taking a hit from some geomagnetic activity, so they'll be noisy and weak. There was a moderate solar flare, so if you're working polar paths, you might see some brief dropouts. Looking ahead, the higher bands will slowly fade a bit later today as the MUF drops, but 30m should hold up. Things settle back down overnight. So, stick to the middle bands today and you'll do fine.
+`.trim();
 
-      if (kp >= 4) {
-        band = downgradeBand(band);
-      }
+  const bestBand = "30m";
+  const reason =
+    "30m is currently the most reliable mix of MUF support and resilience to geomagnetic noise for UK daytime paths.";
 
-      const hasGStorm = alerts.active.some((a: any) =>
-        a.type.includes("Geomagnetic")
-      );
-      const hasFlare = alerts.active.some((a: any) =>
-        a.type.includes("Flare")
-      );
-
-      if (hasGStorm) {
-        band = downgradeBand(band);
-      }
-
-      if (hasFlare) {
-        if (
-          band === "10m" ||
-          band === "12m" ||
-          band === "15m" ||
-          band === "17m" ||
-          band === "20m"
-        ) {
-          band = "30m";
-        }
-      }
-
-      return band;
-    }
-
-    const bestBand = getBestBand(current, alerts);
-
-    // ----------------------------------------------------
-    // WHY THIS BAND? (NEW)
-    // ----------------------------------------------------
-    function getBestBandReason(current: any, alerts: any, bestBand: string) {
-      const reasons: string[] = [];
-      const { sfi, kp, muf } = current;
-
-      // SFI
-      if (sfi >= 140) {
-        reasons.push("High solar flux is boosting ionization");
-      } else if (sfi >= 120) {
-        reasons.push("Solar flux is healthy enough for stable daytime propagation");
-      }
-
-      // MUF
-      if (muf >= 22) {
-        reasons.push(`MUF at ${muf} MHz supports higher bands`);
-      } else if (muf >= 18) {
-        reasons.push(`MUF supports mid‑range bands like 17m and 20m`);
-      }
-
-      // Kp
-      if (kp <= 3) {
-        reasons.push("Low geomagnetic activity keeps paths stable");
-      } else {
-        reasons.push("Elevated Kp is degrading higher‑frequency performance");
-      }
-
-      // Alerts
-      const hasGStorm = alerts.active.some((a: any) =>
-        a.type.includes("Geomagnetic")
-      );
-      const hasFlare = alerts.active.some((a: any) =>
-        a.type.includes("Flare")
-      );
-
-      if (hasGStorm) {
-        reasons.push("Geomagnetic storm conditions are weakening low bands");
-      }
-
-      if (hasFlare) {
-        reasons.push("Solar flare absorption is affecting higher bands");
-      }
-
-      // Band‑specific
-      if (bestBand === "30m") {
-        reasons.push("30m remains reliable even during disturbed conditions");
-      }
-
-      return reasons.join(". ") + ".";
-    }
-
-    const reason = getBestBandReason(current, alerts, bestBand);
-
-    // ----------------------------------------------------
-    // AI PROMPT
-    // ----------------------------------------------------
-    const prompt =
-      "Write a short, natural, human-readable HF radio propagation briefing. " +
-      "Do NOT use headings or sections. Do NOT format like a report. " +
-      "Write like an experienced HF operator giving a quick spoken summary. " +
-      "Keep it conversational, clear, and easy to skim. " +
-      "Use short sentences. No jargon unless necessary. No filler. No repetition.\n\n" +
-
-      "Best band right now: " + bestBand + "\n\n" +
-
-      "Here is the data to base it on:\n" +
-      "- SFI: " + current.sfi + "\n" +
-      "- Kp: " + current.kp + "\n" +
-      "- MUF: " + current.muf + " MHz\n" +
-      "- Overall rating: " + score.label + "\n" +
-      "- Alerts:\n" +
-      alerts.active
-        .map(
-          (a: any) =>
-            "  * " + a.type + " (" + a.level + "): " + a.message
-        )
-        .join("\n") +
-      "\n" +
-      "- Forecast hours:\n" +
-      forecast.hours
-        .map(
-          (h: any) =>
-            "  * " +
-            h.time +
-            ": SFI " +
-            h.SFI +
-            ", Kp " +
-            h.Kp +
-            ", MUF " +
-            h.MUF
-        )
-        .join("\n") +
-      "\n\n" +
-      "Now produce a friendly, spoken-style summary of what this means for HF operators today. " +
-      "Focus on what bands will work well, what to avoid, and what to expect over the next 12–24 hours. " +
-      "Keep it human. Keep it simple. Keep it short.";
-
-    // ----------------------------------------------------
-    // DEEPSEEK CALL
-    // ----------------------------------------------------
-    const deepseekRes = await fetch(
-      "https://api.deepseek.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + apiKey,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "deepseek-chat",
-          messages: [
-            {
-              role: "system",
-              content: "You are an HF radio operator with decades of experience."
-            },
-            { role: "user", content: prompt }
-          ],
-          temperature: 0.4
-        })
-      }
-    );
-
-    const deepseekData = await deepseekRes.json();
-    console.log("DeepSeek response:", deepseekData);
-
-    const summary =
-      deepseekData?.choices?.[0]?.message?.content ||
-      "No summary generated.";
-
-    return NextResponse.json({
-      markdown: summary,
-      bestBand: bestBand,
-      reason: reason
-    });
-
-  } catch (err) {
-    console.error("AI summary error:", err);
-    return NextResponse.json({ markdown: "AI summary unavailable." });
-  }
+  return Response.json({
+    markdown,
+    bestBand,
+    reason,
+    quickTake: aiQuickTake,
+    severity,
+  });
 }

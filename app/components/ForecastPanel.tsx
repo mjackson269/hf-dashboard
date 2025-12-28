@@ -1,32 +1,38 @@
 "use client";
 
-import { useForecastData } from "../hooks/useForecastData";
+import { card, panelTitle } from "../styles/designSystem";
 
 export default function ForecastPanel() {
-  const { data, isLoading, isError } = useForecastData();
-
-  if (isLoading) return <div className="bg-neutral-900 text-white p-4 rounded-lg">Loading forecast…</div>;
-  if (isError) return <div className="bg-neutral-900 text-white p-4 rounded-lg">Error loading forecast.</div>;
+  // Replace with your real forecast data
+  const forecast = [
+    { time: "00:00", sfi: 145, kp: 2, muf: 22.5 },
+    { time: "06:00", sfi: 147, kp: 3, muf: 21.8 },
+    { time: "12:00", sfi: 150, kp: 4, muf: 20.2 },
+    { time: "18:00", sfi: 148, kp: 3, muf: 19.5 },
+    { time: "00:00", sfi: 146, kp: 2, muf: 21.0 },
+  ];
 
   return (
-    <div className="bg-neutral-900 text-white p-4 rounded-lg">
-      <h2 className="text-xl font-semibold mb-2">24h Propagation Forecast</h2>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left border-b border-neutral-700">
-            <th>Time</th>
-            <th>SFI</th>
-            <th>Kp</th>
-            <th>MUF (MHz)</th>
+    <div className={card}>
+      <h2 className={panelTitle}>24h Propagation Forecast</h2>
+
+      <table className="w-full text-sm border-collapse">
+        <thead className="text-neutral-400">
+          <tr>
+            <th className="text-left py-1">Time</th>
+            <th className="text-left py-1">SFI</th>
+            <th className="text-left py-1">Kp</th>
+            <th className="text-left py-1">MUF (MHz)</th>
           </tr>
         </thead>
+
         <tbody>
-          {data.hours.map((hour: any, index: number) => (
-            <tr key={index} className="border-b border-neutral-800">
-              <td>{hour.time}</td>
-              <td>{hour.SFI}</td>
-              <td>{hour.Kp}</td>
-              <td>{hour.MUF}</td>
+          {forecast.map((row, i) => (
+            <tr key={i} className="border-t border-neutral-800">
+              <td className="py-1">{row.time}</td>
+              <td className="py-1">{row.sfi}</td>
+              <td className="py-1">{row.kp}</td>
+              <td className="py-1">{row.muf}</td>
             </tr>
           ))}
         </tbody>
