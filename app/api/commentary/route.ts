@@ -3,10 +3,8 @@ export const revalidate = 0;
 
 export async function GET() {
   try {
-    // Dynamically resolve base URL for local + Vercel
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ? process.env.NEXT_PUBLIC_BASE_URL : ""}/api/current`, {
-  cache: "no-store",
-});
+    // ⭐ Correct way to call another API route in Next.js
+    const res = await fetch("/api/current", { cache: "no-store" });
 
     if (!res.ok) {
       throw new Error(`Failed to fetch /api/current: ${res.status}`);
@@ -45,7 +43,7 @@ export async function GET() {
       `MUF currently sits at ${muf} MHz.`,
     ];
 
-    // ---- Band Commentary ----
+    // ---- Band Notes ----
     const bandNotes = {
       "10m": bands["10m"].mufSupport === "open"
         ? "10m is fully open — excellent for DX and long‑path opportunities."
