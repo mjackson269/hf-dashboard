@@ -4,14 +4,9 @@ export const revalidate = 0;
 export async function GET() {
   try {
     // Dynamically resolve base URL for local + Vercel
-    const baseUrl =
-      process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000";
-
-    const res = await fetch(`${baseUrl}/api/current`, {
-      cache: "no-store",
-    });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ? process.env.NEXT_PUBLIC_BASE_URL : ""}/api/current`, {
+  cache: "no-store",
+});
 
     if (!res.ok) {
       throw new Error(`Failed to fetch /api/current: ${res.status}`);
