@@ -1,7 +1,7 @@
 "use client";
 
 import ForceCSS from "./force-css";
-
+import { BandTable } from "./components/BandTable";
 import HeroHeader from "./components/HeroHeader";
 import StatusBar from "./components/StatusBar";
 import SummaryPanel from "./components/SummaryPanel";
@@ -12,8 +12,62 @@ import AlertsPanel from "./components/AlertsPanel";
 import QuickTake from "./components/QuickTake";
 import Footer from "./components/Footer";
 import { gridGap } from "./lib/designSystem";
+import { useSummaryData } from "./hooks/useSummaryData";
 
 export default function Home() {
+  const { data, isLoading, isError } = useSummaryData();
+
+  // ---------------------------------------------
+  // Band scoring logic
+  // ---------------------------------------------
+  function scoreBand(mufSupport: string, snr: number) {
+    let score = 0;
+
+    if (mufSupport === "open") score += 60;
+    if (mufSupport === "marginal") score += 30;
+
+    if (snr >= 25) score += 30;
+    else if (snr >= 15) score += 15;
+    else score += 5;
+
+    return score;
+  }
+
+  function statusFromScore(score: number) {
+    if (score >= 70) return "Good";
+    if (score >= 40) return "Fair";
+    if (score >= 20) return "Poor";
+    return "Closed";
+  }
+
+  function notesFromBand(mufSupport: string, snr: number) {
+    if (mufSupport === "closed") return "MUF too low";
+    if (mufSupport === "marginal") return "Weak MUF";
+    if (snr < 15) return "High noise";
+    if (snr < 25) return "Moderate noise";
+    return "Stable";
+  }
+
+  // ---------------------------------------------
+  // Build bandRows for the Band Table
+  // ---------------------------------------------
+  let bandRows: any[] = [];
+
+  if (data?.bands) {
+    bandRows = Object.entries(data.bands).map(([band, info]: any) => {
+      const score = scoreBand(info.mufSupport, info.snr);
+
+      return {
+        band,
+        muf: info.freq,
+        snr: info.snr,
+        score,
+        status: statusFromScore(score),
+        notes: notesFromBand(info.mufSupport, info.snr),
+      };
+    });
+  }
+
   return (
     <>
       {/* Force Tailwind CSS to be emitted in production */}
@@ -37,6 +91,9 @@ export default function Home() {
           <ScorePanel />
           <AlertsPanel />
           <ForecastPanel />
+
+          {/* 📡 Band Table */}
+          <BandTable bands={bandRows} />
         </div>
 
         {/* Footer */}
