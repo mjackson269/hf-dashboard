@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import ForceCSS from "./force-css";
 import { BandTable } from "./components/BandTable";
 import HeroHeader from "./components/HeroHeader";
@@ -11,11 +12,31 @@ import ForecastPanel from "./components/ForecastPanel";
 import AlertsPanel from "./components/AlertsPanel";
 import QuickTake from "./components/QuickTake";
 import Footer from "./components/Footer";
+import CommentaryPanel from "./components/CommentaryPanel";
 import { gridGap } from "./lib/designSystem";
 import { useSummaryData } from "./hooks/useSummaryData";
 
 export default function Home() {
   const { data, isLoading, isError } = useSummaryData();
+
+  // ---------------------------------------------
+  // AI Commentary Fetch
+  // ---------------------------------------------
+  const [commentary, setCommentary] = useState<any>(null);
+
+  useEffect(() => {
+    async function loadCommentary() {
+      try {
+        const res = await fetch("/api/commentary", { cache: "no-store" });
+        const json = await res.json();
+        setCommentary(json);
+      } catch (err) {
+        console.error("Failed to load commentary:", err);
+      }
+    }
+
+    loadCommentary();
+  }, []);
 
   // ---------------------------------------------
   // Band scoring logic
@@ -75,7 +96,7 @@ export default function Home() {
 
       <main className="min-h-screen bg-neutral-950 text-white p-6 flex flex-col">
 
-        {/* ⭐ New Hero Header */}
+        {/* ⭐ Hero Header */}
         <HeroHeader />
 
         {/* Modern Status Bar */}
@@ -89,6 +110,10 @@ export default function Home() {
           <SummaryPanel />
           <CurrentPanel />
           <ScorePanel />
+
+          {/* ⭐ AI Commentary Panel */}
+          {commentary && <CommentaryPanel commentary={commentary} />}
+
           <AlertsPanel />
           <ForecastPanel />
 
