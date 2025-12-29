@@ -1,10 +1,16 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // ⭐ Correct way to call another API route in Next.js
-    const res = await fetch("/api/current", { cache: "no-store" });
+    // ⭐ Derive absolute base URL from the incoming request
+    const url = new URL(request.url);
+    const baseUrl = `${url.protocol}//${url.host}`;
+
+    // ⭐ Correct absolute fetch that works everywhere
+    const res = await fetch(`${baseUrl}/api/current`, {
+      cache: "no-store",
+    });
 
     if (!res.ok) {
       throw new Error(`Failed to fetch /api/current: ${res.status}`);
@@ -68,15 +74,12 @@ export async function GET() {
       advice = "20m remains the safest all‑round band for consistent contacts.";
     }
 
-    // ---- Final Payload ----
-    const commentary = {
+    return Response.json({
       quickTake,
       trendInsights,
       bandNotes,
       advice,
-    };
-
-    return Response.json(commentary);
+    });
 
   } catch (err) {
     console.error("[/api/commentary] Error:", err);
