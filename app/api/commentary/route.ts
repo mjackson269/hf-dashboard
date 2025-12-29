@@ -3,11 +3,11 @@ export const revalidate = 0;
 
 export async function GET(request: Request) {
   try {
-    // ⭐ Build absolute base URL from the incoming request
+    // Build absolute base URL from the incoming request
     const url = new URL(request.url);
     const baseUrl = `${url.protocol}//${url.host}`;
 
-    // ⭐ Correct absolute fetch (works locally + Vercel)
+    // Absolute fetch (required for server-side)
     const res = await fetch(`${baseUrl}/api/current`, {
       cache: "no-store",
     });
@@ -85,4 +85,12 @@ export async function GET(request: Request) {
     console.error("[/api/commentary] Error:", err);
     return Response.json(
       {
-        quickTake: "Live commentary
+        quickTake: "Live commentary unavailable — using fallback conditions.",
+        trendInsights: [],
+        bandNotes: {},
+        advice: "Try again shortly.",
+      },
+      { status: 500 }
+    );
+  }
+}
