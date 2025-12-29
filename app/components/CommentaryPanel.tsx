@@ -1,6 +1,13 @@
 "use client";
 
-export default function CommentaryPanel({ commentary }) {
+type Commentary = {
+  quickTake: string;
+  trendInsights: string[];
+  bandNotes: Record<string, string>;
+  advice: string;
+};
+
+export default function CommentaryPanel({ commentary }: { commentary: Commentary }) {
   return (
     <div className="w-full bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-5">
       
