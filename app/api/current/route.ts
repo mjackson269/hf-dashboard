@@ -1,6 +1,7 @@
 // app/api/current/route.ts
 
 // Revalidate every 5 minutes
+export const dynamic = "force-dynamic";
 export const revalidate = 300;
 
 const SFI_TEXT_URL = "https://services.swpc.noaa.gov/text/daily-solar-indices.txt";
