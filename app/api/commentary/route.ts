@@ -1,12 +1,15 @@
-// app/api/commentary/route.ts
-
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET() {
   try {
-    // Pull live data from your existing endpoint
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/current`, {
+    // Dynamically resolve base URL for local + Vercel
+    const baseUrl =
+      process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000";
+
+    const res = await fetch(`${baseUrl}/api/current`, {
       cache: "no-store",
     });
 
