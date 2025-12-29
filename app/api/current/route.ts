@@ -1,4 +1,5 @@
 // app/api/current/route.ts
+// force vercel rebuild
 
 export async function GET() {
   // In a real app, fetch these from your data source.
