@@ -1,11 +1,9 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// UK-centric (Keighley-ish) location for day/night & transitions
 const LATITUDE = 53.8;
 const LONGITUDE = -1.9;
 
-// Bands we care about and their centre frequencies
 const BANDS = {
   "80m": 3.6,
   "40m": 7.1,
@@ -29,7 +27,7 @@ function isDaytime(d: Date): boolean {
   return hour >= 7 && hour < 18;
 }
 
-function transitionFactor(d: Date): { sunrise: number; sunset: number } {
+function transitionFactor(d: Date) {
   const hour = d.getUTCHours();
   let sunrise = 0;
   let sunset = 0;
@@ -46,10 +44,6 @@ function transitionFactor(d: Date): { sunrise: number; sunset: number } {
 
   return { sunrise, sunset };
 }
-
-// ------------------------
-// D-layer & SNR modelling
-// ------------------------
 
 function calcAbsorption(freqMHz: number, kp: number, isDay: boolean): number {
   const baseLoss = isDay ? 3.0 : 1.0;
@@ -125,10 +119,6 @@ function calcDXProbability(
   return Number(clamp(score, 0, 1).toFixed(2)) * 100;
 }
 
-// ------------------------
-// New MUF model
-// ------------------------
-
 function calcFoF2FromSfiAndTime(sfi: number, d: Date): number {
   const sfiNorm = clamp((sfi - 60) / 100, 0, 2);
   const hour = d.getUTCHours();
@@ -167,12 +157,10 @@ function calcForecastMUF(
     Math.abs(d.getTime() - now.getTime()) / (1000 * 60 * 60);
   const blendFactor = clamp(1 - hoursFromNow / 6, 0, 1);
 
-  return Number((muf * (1 - blendFactor) + liveMufNow * blendFactor).toFixed(1));
+  return Number(
+    (muf * (1 - blendFactor) + liveMufNow * blendFactor).toFixed(1)
+  );
 }
-
-// ------------------------
-// Handler
-// ------------------------
 
 export async function GET(request: Request) {
   try {
@@ -183,11 +171,24 @@ export async function GET(request: Request) {
       cache: "no-store",
     });
 
-    const current = await res.json();
+    const raw = await res.text();
+
+    if (!res.ok) {
+      console.error("ERROR calling /api/current:", res.status, raw.slice(0, 200));
+      return Response.json({ forecast: [] }, { status: 500 });
+    }
+
+    let current;
+    try {
+      current = JSON.parse(raw);
+    } catch (e) {
+      console.error("Invalid JSON from /api/current:", raw.slice(0, 200));
+      return Response.json({ forecast: [] }, { status: 500 });
+    }
+
     const { sfiEstimated, kp, muf: liveMufNow } = current;
 
     const now = new Date();
-
     const steps: Date[] = [];
     for (let i = 0; i <= 24; i += 3) {
       steps.push(addHours(now, i));
@@ -196,7 +197,13 @@ export async function GET(request: Request) {
     const forecast = steps.map((ts, idx) => {
       const sfi = Math.round(sfiEstimated + Math.sin(idx / 2) * 4);
       const kpForecast = clamp(kp + Math.cos(idx / 2) * 0.7, 0, 9);
-      const mufForecast = calcForecastMUF(sfi, kpForecast, ts, liveMufNow, now);
+      const mufForecast = calcForecastMUF(
+        sfi,
+        kpForecast,
+        ts,
+        liveMufNow,
+        now
+      );
 
       const isDay = isDaytime(ts);
 
@@ -209,7 +216,14 @@ export async function GET(request: Request) {
 
         const a = calcAbsorption(freq, kpForecast, isDay);
         const s = calcSNR(freq, sfi, mufForecast, kpForecast, a);
-        const dx = calcDXProbability(band, s, freq, mufForecast, kpForecast, ts);
+        const dx = calcDXProbability(
+          band,
+          s,
+          freq,
+          mufForecast,
+          kpForecast,
+          ts
+        );
 
         absorption[band] = a;
         snr[band] = s;
