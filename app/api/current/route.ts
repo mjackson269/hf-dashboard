@@ -20,29 +20,6 @@ export async function GET() {
       return Response.json({ error: "Invalid NOAA JSON" }, { status: 500 });
     }
 
-    return Response.json(data);
-  } catch (err) {
-    console.error("Failed to fetch NOAA:", err);
-    return Response.json({ error: "NOAA fetch failed" }, { status: 500 });
-  }
-}
-
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch (e) {
-      console.error("NOAA returned invalid JSON:", raw.slice(0, 200));
-      return Response.json(
-        {
-          error: "NOAA invalid JSON",
-          sfiEstimated: 90,
-          kp: 2,
-          muf: 12,
-        },
-        { status: 200 }
-      );
-    }
-
     // Extract values safely
     const latest = data[data.length - 1] || {};
     const sfiEstimated = latest.solar_flux || 90;
@@ -54,6 +31,7 @@ export async function GET() {
       kp,
       muf: Number(muf.toFixed(1)),
     });
+
   } catch (err) {
     console.error("[/api/current] Error:", err);
     return Response.json(
