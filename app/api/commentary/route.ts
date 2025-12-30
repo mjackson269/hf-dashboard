@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   try {
     // Build absolute base URL from the incoming request
     const url = new URL(request.url);
-    const baseUrl = `${url.protocol}//${url.host}`;
+    const res = await fetch("http://127.0.0.1:3000/api/current", { cache: "no-store" });
 
     // Absolute fetch (required for server-side)
     const res = await fetch(`${baseUrl}/api/current`, {

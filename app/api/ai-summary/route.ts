@@ -78,7 +78,7 @@ async function generateAIQuickTake(ruleSignals: string): Promise<string> {
 }
 
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const res = await fetch("http://127.0.0.1:3000/api/current", { cache: "no-store" });
 
   let current: CurrentData | null = null;
 

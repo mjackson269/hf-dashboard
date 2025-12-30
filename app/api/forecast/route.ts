@@ -165,7 +165,7 @@ function calcForecastMUF(
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const baseUrl = `${url.protocol}//${url.host}`;
+    const res = await fetch("http://127.0.0.1:3000/api/current", { cache: "no-store" });
 
     const res = await fetch(`${baseUrl}/api/current`, {
       cache: "no-store",
