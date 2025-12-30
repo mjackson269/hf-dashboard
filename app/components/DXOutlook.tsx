@@ -46,8 +46,13 @@ export default function DXOutlook() {
 
   bands.forEach((band) => {
     const values = forecast.map((f: any) => f.dxProbability[band]);
-    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+
+    const avg =
+      values.reduce((a: number, b: number): number => a + b, 0) /
+      values.length;
+
     const max = Math.max(...values);
+
     bandSummary[band] = { avg, max };
   });
 
