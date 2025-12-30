@@ -3,24 +3,29 @@ export const revalidate = 0;
 
 export async function GET() {
   try {
-    const NOAA_URL =
-      "https://services.swpc.noaa.gov/json/solar-cycle/solar_cycle.json";
-
+    const NOAA_URL = "https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json";
     const res = await fetch(NOAA_URL, { cache: "no-store" });
     const raw = await res.text();
 
     if (!res.ok) {
-      console.error("NOAA upstream error:", res.status, raw.slice(0, 200));
-      return Response.json(
-        {
-          error: "NOAA upstream error",
-          sfiEstimated: 90,
-          kp: 2,
-          muf: 12,
-        },
-        { status: 200 }
-      );
+      console.error("NOAA error:", res.status, raw.slice(0, 200));
+      return Response.json({ error: "NOAA upstream error" }, { status: 500 });
     }
+
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      console.error("Invalid NOAA JSON:", raw.slice(0, 200));
+      return Response.json({ error: "Invalid NOAA JSON" }, { status: 500 });
+    }
+
+    return Response.json(data);
+  } catch (err) {
+    console.error("Failed to fetch NOAA:", err);
+    return Response.json({ error: "NOAA fetch failed" }, { status: 500 });
+  }
+}
 
     let data;
     try {

@@ -1,5 +1,11 @@
 // app/api/ai-summary/route.ts
 
+function getInternalUrl() {
+  return process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://127.0.0.1:3000";
+}
+
 type CurrentData = {
   sfiEstimated: number;
   sfiEstimatedPrev: number;
@@ -14,34 +20,19 @@ type CurrentData = {
 function generateRuleBasedSignals(current: CurrentData): string {
   const signals: string[] = [];
 
-  if (current.muf > current.mufPrev) {
-    signals.push("higher bands are improving as MUF rises");
-  } else if (current.muf < current.mufPrev) {
-    signals.push("higher bands are weakening as MUF falls");
-  }
+  if (current.muf > current.mufPrev) signals.push("higher bands are improving as MUF rises");
+  else if (current.muf < current.mufPrev) signals.push("higher bands are weakening as MUF falls");
 
-  if (current.kp > current.kpPrev) {
-    signals.push("geomagnetic activity is increasing, raising noise levels");
-  } else if (current.kp < current.kpPrev) {
-    signals.push("geomagnetic conditions are easing, reducing noise");
-  }
+  if (current.kp > current.kpPrev) signals.push("geomagnetic activity is increasing, raising noise levels");
+  else if (current.kp < current.kpPrev) signals.push("geomagnetic conditions are easing, reducing noise");
 
-  if (current.sfiEstimated > current.sfiEstimatedPrev) {
-    signals.push("solar flux is strengthening, supporting higher bands");
-  } else if (current.sfiEstimated < current.sfiEstimatedPrev) {
-    signals.push("solar flux is dipping slightly, softening higher-band support");
-  }
+  if (current.sfiEstimated > current.sfiEstimatedPrev) signals.push("solar flux is strengthening, supporting higher bands");
+  else if (current.sfiEstimated < current.sfiEstimatedPrev) signals.push("solar flux is dipping slightly, softening higher-band support");
 
-  if (signals.length === 0) {
-    return "Conditions are broadly stable across the HF bands.";
-  }
-
-  return signals.join("; ");
+  return signals.length ? signals.join("; ") : "Conditions are broadly stable across the HF bands.";
 }
 
-function determineSeverity(
-  current: CurrentData
-): "improving" | "stable" | "degrading" {
+function determineSeverity(current: CurrentData): "improving" | "stable" | "degrading" {
   let score = 0;
 
   if (current.muf > current.mufPrev) score += 2;
@@ -78,12 +69,10 @@ async function generateAIQuickTake(ruleSignals: string): Promise<string> {
 }
 
 export async function GET() {
-  const res = await fetch("http://127.0.0.1:3000/api/current", { cache: "no-store" });
-
   let current: CurrentData | null = null;
 
   try {
-    const res = await fetch(`${baseUrl}/api/current`, { cache: "no-store" });
+    const res = await fetch(`${getInternalUrl()}/api/current`, { cache: "no-store" });
     const raw = await res.text();
 
     if (!res.ok) {
@@ -91,7 +80,7 @@ export async function GET() {
     } else {
       try {
         current = JSON.parse(raw);
-      } catch (e) {
+      } catch {
         console.error("Invalid JSON from /api/current:", raw.slice(0, 200));
       }
     }
@@ -122,14 +111,10 @@ export async function GET() {
 Alright, conditions are looking pretty good overall. The 30-meter band is your best bet right now, solid and reliable. Higher bands like 20m and 17m should also be working well for daylight paths. Watch out for the lower bands though, 80 and 160 meters are taking a hit from some geomagnetic activity, so they'll be noisy and weak. There was a moderate solar flare, so if you're working polar paths, you might see some brief dropouts. Looking ahead, the higher bands will slowly fade a bit later today as the MUF drops, but 30m should hold up. Things settle back down overnight. So, stick to the middle bands today and you'll do fine.
   `.trim();
 
-  const bestBand = "30m";
-  const reason =
-    "30m is currently the most reliable mix of MUF support and resilience to geomagnetic noise for UK daytime paths.";
-
   return Response.json({
     markdown,
-    bestBand,
-    reason,
+    bestBand: "30m",
+    reason: "30m is currently the most reliable mix of MUF support and resilience to geomagnetic noise for UK daytime paths.",
     quickTake: aiQuickTake,
     severity,
     score,

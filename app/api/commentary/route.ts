@@ -1,20 +1,43 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET(request: Request) {
-  try {
-    // Build absolute base URL from the incoming request
-    const url = new URL(request.url);
-    const res = await fetch("http://127.0.0.1:3000/api/current", { cache: "no-store" });
+function getInternalUrl() {
+  return process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://127.0.0.1:3000";
+}
 
-    // Absolute fetch (required for server-side)
-    const res = await fetch(`${baseUrl}/api/current`, {
-      cache: "no-store",
-    });
+export async function GET() {
+  let current = null;
+
+  try {
+    const res = await fetch(`${getInternalUrl()}/api/current`, { cache: "no-store" });
+    const raw = await res.text();
 
     if (!res.ok) {
-      throw new Error(`Failed to fetch /api/current: ${res.status}`);
+      console.error("ERROR calling /api/current:", res.status, raw.slice(0, 200));
+    } else {
+      try {
+        current = JSON.parse(raw);
+      } catch {
+        console.error("Invalid JSON from /api/current:", raw.slice(0, 200));
+      }
     }
+  } catch (err) {
+    console.error("Failed to fetch /api/current:", err);
+  }
+
+  if (!current) {
+    return Response.json(
+      { commentary: "Propagation commentary unavailable due to upstream error." },
+      { status: 200 }
+    );
+  }
+
+  const commentary = `Solar flux is ${current.sfiEstimated}, Kp is ${current.kp}.`;
+
+  return Response.json({ commentary });
+}
 
     const data = await res.json();
 
