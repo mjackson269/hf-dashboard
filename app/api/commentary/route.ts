@@ -3,14 +3,20 @@ export const revalidate = 0;
 
 export async function GET(request: Request) {
   const origin = new URL(request.url).origin;
-
   let current = null;
 
   try {
-    const res = await fetch(`${origin}/api/current`, { cache: "no-store" });
+    const res = await fetch(`${origin}/api/current`, {
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+    });
+
     const raw = await res.text();
 
-    if (!res.ok) {
+    if (!res.ok || raw.startsWith("<!doctype html")) {
       console.error("ERROR calling /api/current:", res.status, raw.slice(0, 200));
     } else {
       try {
