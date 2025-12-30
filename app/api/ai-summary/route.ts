@@ -72,6 +72,12 @@ export async function GET() {
   let current: CurrentData | null = null;
 
   try {
+    const baseUrl =
+  process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000";
+
+
     const res = await fetch(`${getInternalUrl()}/api/current`, { cache: "no-store" });
     const raw = await res.text();
 

@@ -45,7 +45,7 @@ export default function ForecastPanelV2() {
   const [mode, setMode] = useState<"basic" | "advanced">("basic");
 
   // Always define forecast so hooks never change order
-  const forecast = data?.forecast24h ?? [];
+  const forecast = Array.isArray(data?.forecast24h) ? data.forecast24h : [];
 
   // Best DX window
   const bestDX = useMemo(() => {

@@ -4,7 +4,13 @@ import { NextResponse } from "next/server";
 // NOAA + Solar Data Fetch
 // ------------------------------
 async function fetchSolarData() {
-  const url = "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json";
+  const url =
+    "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json";
+
+const baseUrl =
+  process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000";
 
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch solar data");
@@ -20,7 +26,7 @@ async function fetchSolarData() {
 }
 
 // ------------------------------
-// Forecast Fetch
+// Forecast Fetch (currently offline)
 // ------------------------------
 async function fetchForecast() {
   const url = "https://services.swpc.noaa.gov/json/27-day-outlook.json";
@@ -67,10 +73,15 @@ function computeBestBand(score: number) {
 // ------------------------------
 export async function GET() {
   try {
-    const [solar, forecast] = await Promise.all([
-      fetchSolarData(),
-      fetchForecast(),
-    ]);
+    const solar = await fetchSolarData();
+
+    // Forecast endpoint is currently offline — patch gracefully
+    let forecast = null;
+    try {
+      forecast = await fetchForecast();
+    } catch {
+      console.warn("Forecast data unavailable — NOAA endpoint returned 404");
+    }
 
     const scoring = computeScore(solar);
     const bestBand = computeBestBand(scoring.score);
@@ -78,7 +89,7 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       solar,
-      forecast,
+      forecast, // may be null — but no crash
       scoring,
       bestBand,
       timestamp: new Date().toISOString(),
@@ -86,7 +97,14 @@ export async function GET() {
   } catch (err: any) {
     console.error("SUMMARY ROUTE ERROR:", err);
     return NextResponse.json(
-      { ok: false, error: err.message },
+      {
+        ok: false,
+        error: err.message || "Unknown error",
+        fallback: {
+          scoring: { score: 50, ssn: 0, smoothed_ssn: 0 },
+          bestBand: "40m",
+        },
+      },
       { status: 500 }
     );
   }

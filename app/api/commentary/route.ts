@@ -1,17 +1,13 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function getInternalUrl() {
-  return process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://127.0.0.1:3000";
-}
+export async function GET(request: Request) {
+  const origin = new URL(request.url).origin;
 
-export async function GET() {
   let current = null;
 
   try {
-    const res = await fetch(`${getInternalUrl()}/api/current`, { cache: "no-store" });
+    const res = await fetch(`${origin}/api/current`, { cache: "no-store" });
     const raw = await res.text();
 
     if (!res.ok) {
