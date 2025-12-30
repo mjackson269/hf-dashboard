@@ -14,21 +14,18 @@ type CurrentData = {
 function generateRuleBasedSignals(current: CurrentData): string {
   const signals: string[] = [];
 
-  // MUF trends
   if (current.muf > current.mufPrev) {
     signals.push("higher bands are improving as MUF rises");
   } else if (current.muf < current.mufPrev) {
     signals.push("higher bands are weakening as MUF falls");
   }
 
-  // Kp trends
   if (current.kp > current.kpPrev) {
     signals.push("geomagnetic activity is increasing, raising noise levels");
   } else if (current.kp < current.kpPrev) {
     signals.push("geomagnetic conditions are easing, reducing noise");
   }
 
-  // SFI trends
   if (current.sfiEstimated > current.sfiEstimatedPrev) {
     signals.push("solar flux is strengthening, supporting higher bands");
   } else if (current.sfiEstimated < current.sfiEstimatedPrev) {
@@ -47,15 +44,12 @@ function determineSeverity(
 ): "improving" | "stable" | "degrading" {
   let score = 0;
 
-  // MUF (strongest)
   if (current.muf > current.mufPrev) score += 2;
   if (current.muf < current.mufPrev) score -= 2;
 
-  // Kp (negative)
   if (current.kp < current.kpPrev) score += 1;
   if (current.kp > current.kpPrev) score -= 1;
 
-  // SFI (positive but weaker)
   if (current.sfiEstimated > current.sfiEstimatedPrev) score += 1;
   if (current.sfiEstimated < current.sfiEstimatedPrev) score -= 1;
 
@@ -64,55 +58,66 @@ function determineSeverity(
   return "stable";
 }
 
-// ⭐ NEW — Propagation Score
 function calculatePropagationScore(current: CurrentData): number {
-  let score = 50; // baseline
+  let score = 50;
 
-  // MUF trend (strongest indicator)
   if (current.muf > current.mufPrev) score += 20;
   if (current.muf < current.mufPrev) score -= 20;
 
-  // Kp trend (negative indicator)
   if (current.kp < current.kpPrev) score += 15;
   if (current.kp > current.kpPrev) score -= 15;
 
-  // SFI trend (positive but weaker)
   if (current.sfiEstimated > current.sfiEstimatedPrev) score += 10;
   if (current.sfiEstimated < current.sfiEstimatedPrev) score -= 10;
 
-  // Clamp to 0–100
   return Math.max(0, Math.min(100, score));
 }
 
-// Placeholder AI quick take generator
 async function generateAIQuickTake(ruleSignals: string): Promise<string> {
-  return `Quick take: ${ruleSignals.charAt(0).toUpperCase()}${ruleSignals.slice(
-    1
-  )}`;
+  return `Quick take: ${ruleSignals.charAt(0).toUpperCase()}${ruleSignals.slice(1)}`;
 }
 
 export async function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  const currentRes = await fetch(`${baseUrl}/api/current`, {
-    cache: "no-store",
-  });
+  let current: CurrentData | null = null;
 
-  const current = (await currentRes.json()) as CurrentData;
+  try {
+    const res = await fetch(`${baseUrl}/api/current`, { cache: "no-store" });
+    const raw = await res.text();
 
-  // Rule-based signals
+    if (!res.ok) {
+      console.error("ERROR calling /api/current:", res.status, raw.slice(0, 200));
+    } else {
+      try {
+        current = JSON.parse(raw);
+      } catch (e) {
+        console.error("Invalid JSON from /api/current:", raw.slice(0, 200));
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch /api/current:", err);
+  }
+
+  if (!current) {
+    return Response.json(
+      {
+        markdown: "Propagation summary unavailable due to upstream data error.",
+        bestBand: "20m",
+        reason: "Fallback due to missing data.",
+        quickTake: "Quick take: Data unavailable",
+        severity: "stable",
+        score: 50,
+      },
+      { status: 200 }
+    );
+  }
+
   const ruleSignals = generateRuleBasedSignals(current);
-
-  // AI-style Quick Take
   const aiQuickTake = await generateAIQuickTake(ruleSignals);
-
-  // Severity
   const severity = determineSeverity(current);
-
-  // ⭐ NEW — Propagation Score
   const score = calculatePropagationScore(current);
 
-  // Your existing AI summary (unchanged)
   const markdown = `
 Alright, conditions are looking pretty good overall. The 30-meter band is your best bet right now, solid and reliable. Higher bands like 20m and 17m should also be working well for daylight paths. Watch out for the lower bands though, 80 and 160 meters are taking a hit from some geomagnetic activity, so they'll be noisy and weak. There was a moderate solar flare, so if you're working polar paths, you might see some brief dropouts. Looking ahead, the higher bands will slowly fade a bit later today as the MUF drops, but 30m should hold up. Things settle back down overnight. So, stick to the middle bands today and you'll do fine.
   `.trim();
@@ -121,7 +126,6 @@ Alright, conditions are looking pretty good overall. The 30-meter band is your b
   const reason =
     "30m is currently the most reliable mix of MUF support and resilience to geomagnetic noise for UK daytime paths.";
 
-  // ⭐ FINAL RESPONSE — now includes score
   return Response.json({
     markdown,
     bestBand,
