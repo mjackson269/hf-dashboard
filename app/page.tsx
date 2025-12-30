@@ -8,7 +8,6 @@ import StatusBar from "./components/StatusBar";
 import SummaryPanel from "./components/SummaryPanel";
 import CurrentPanel from "./components/CurrentPanel";
 import ScorePanel from "./components/ScorePanel";
-import ForecastPanel from "./components/ForecastPanel";
 import AlertsPanel from "./components/AlertsPanel";
 import QuickTake from "./components/QuickTake";
 import Footer from "./components/Footer";
