@@ -16,6 +16,8 @@ import CommentaryPanel from "./components/CommentaryPanel";
 import { gridGap } from "./lib/designSystem";
 import ForecastPanelV2 from "./components/ForecastPanelV2";
 import DXHeatmap from "./components/DXHeatmap";
+import DXOutlook from "./components/DXOutlook";
+import BestBandNow from "./components/BestBandNow";
 import { useSummaryData } from "./hooks/useSummaryData";
 
 export default function Home() {
@@ -111,6 +113,7 @@ export default function Home() {
         <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${gridGap}`}>
           <SummaryPanel />
           <CurrentPanel />
+	  <BestBandNow />
           <ScorePanel />
 
           {/* ⭐ AI Commentary Panel */}
@@ -118,6 +121,7 @@ export default function Home() {
 
           <AlertsPanel />
           <ForecastPanelV2 />
+	  <DXOutlook />
 	  <DXHeatmap />
 
           {/* 📡 Band Table */}

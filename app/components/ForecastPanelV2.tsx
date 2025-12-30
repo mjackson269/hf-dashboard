@@ -22,6 +22,24 @@ function classifyMufSupport(muf: number, band: BandKey) {
   return "Open";
 }
 
+// Day/night shading based on UTC hour in timeLabel ("HH:MM")
+function getShadingClassFromTimeLabel(timeLabel: string): string {
+  const hour = Number(timeLabel.substring(0, 2));
+  if (Number.isNaN(hour)) return "";
+
+  // Daytime: 07–18 UTC
+  if (hour >= 7 && hour < 18) return "";
+
+  // Sunrise: 05–07 UTC
+  if ((hour >= 5 && hour < 7) || (hour >= 18 && hour < 20)) {
+    // Sunset: 18–20 UTC
+    return "bg-neutral-900/20";
+  }
+
+  // Night
+  return "bg-neutral-900/40";
+}
+
 export default function ForecastPanelV2() {
   const { data, isLoading } = useSummaryData();
   const [mode, setMode] = useState<"basic" | "advanced">("basic");
@@ -29,9 +47,7 @@ export default function ForecastPanelV2() {
   // Always define forecast so hooks never change order
   const forecast = data?.forecast24h ?? [];
 
-  // ---------------------------
-  // Best DX window (safe)
-  // ---------------------------
+  // Best DX window
   const bestDX = useMemo(() => {
     if (!forecast.length) return null;
 
@@ -49,9 +65,7 @@ export default function ForecastPanelV2() {
     return best;
   }, [forecast]);
 
-  // ---------------------------
   // Best band per time block
-  // ---------------------------
   const bestBandPerStep = useMemo(() => {
     if (!forecast.length) return [];
 
@@ -65,9 +79,7 @@ export default function ForecastPanelV2() {
     });
   }, [forecast]);
 
-  // ---------------------------
   // Timestamp
-  // ---------------------------
   const now = new Date();
   const formatted = now.toLocaleString("en-GB", {
     weekday: "short",
@@ -77,16 +89,10 @@ export default function ForecastPanelV2() {
     minute: "2-digit",
   });
 
-  // ---------------------------
-  // SAFE conditional return
-  // ---------------------------
   if (isLoading || !forecast.length) {
     return <div className={card}>Loading forecast…</div>;
   }
 
-  // ---------------------------
-  // RENDER
-  // ---------------------------
   return (
     <div className={card}>
       {/* Header + toggle */}
@@ -119,7 +125,12 @@ export default function ForecastPanelV2() {
       {/* Mobile layout */}
       <div className="md:hidden space-y-3">
         {forecast.map((step: any, i: number) => (
-          <div key={i} className="p-3 rounded bg-neutral-900">
+          <div
+            key={i}
+            className={`p-3 rounded bg-neutral-900 ${getShadingClassFromTimeLabel(
+              step.timeLabel
+            )}`}
+          >
             <div className="text-sm font-semibold mb-2">
               {step.timeLabel} UTC{" "}
               {bestBandPerStep[i] && (
@@ -170,7 +181,12 @@ export default function ForecastPanelV2() {
             <tr>
               <th className="text-left py-1 pr-2">Band</th>
               {forecast.map((step: any, i: number) => (
-                <th key={i} className="text-center px-2 py-1 whitespace-nowrap">
+                <th
+                  key={i}
+                  className={`text-center px-2 py-1 whitespace-nowrap ${getShadingClassFromTimeLabel(
+                    step.timeLabel
+                  )}`}
+                >
                   <div>{step.timeLabel}</div>
                   {bestBandPerStep[i] && (
                     <div className="text-[0.65rem] text-emerald-400">
@@ -188,11 +204,16 @@ export default function ForecastPanelV2() {
                 <td className="py-1 pr-2 font-medium text-slate-300">{band}</td>
 
                 {forecast.map((step: any, i: number) => {
+                  const shading = getShadingClassFromTimeLabel(step.timeLabel);
+
                   if (mode === "basic") {
                     const support = classifyMufSupport(step.muf, band);
 
                     return (
-                      <td key={i} className="px-2 py-1 text-center">
+                      <td
+                        key={i}
+                        className={`px-2 py-1 text-center ${shading}`}
+                      >
                         <span
                           className={
                             support === "Open"
@@ -232,7 +253,10 @@ export default function ForecastPanelV2() {
                       : "bg-red-500";
 
                   return (
-                    <td key={i} className="px-2 py-1 text-center">
+                    <td
+                      key={i}
+                      className={`px-2 py-1 text-center ${shading}`}
+                    >
                       <div className="flex flex-col items-center gap-0.5">
                         <span className={`font-semibold ${snrColor}`}>
                           {snr} dB
