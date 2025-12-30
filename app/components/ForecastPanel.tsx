@@ -1,20 +1,32 @@
 "use client";
 
 import { card, panelTitle } from "../lib/designSystem";
+import { useSummaryData } from "../hooks/useSummaryData";
 
 export default function ForecastPanel() {
-  // Replace with your real forecast data
-  const forecast = [
-    { time: "00:00", sfi: 145, kp: 2, muf: 22.5 },
-    { time: "06:00", sfi: 147, kp: 3, muf: 21.8 },
-    { time: "12:00", sfi: 150, kp: 4, muf: 20.2 },
-    { time: "18:00", sfi: 148, kp: 3, muf: 19.5 },
-    { time: "00:00", sfi: 146, kp: 2, muf: 21.0 },
-  ];
+  const { data, isLoading } = useSummaryData();
+
+  if (isLoading || !data?.forecast24h) {
+    return <div className={card}>Loading forecast…</div>;
+  }
+
+  const forecast = data.forecast24h;
+
+  const now = new Date();
+  const formatted = now.toLocaleString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   return (
     <div className={card}>
-      <h2 className={panelTitle}>24h Propagation Forecast</h2>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className={panelTitle}>24h Propagation Forecast</h2>
+        <span className="text-xs text-neutral-400">Updated: {formatted}</span>
+      </div>
 
       <table className="w-full text-sm border-collapse">
         <thead className="text-neutral-400">

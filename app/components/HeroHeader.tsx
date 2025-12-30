@@ -1,8 +1,17 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
+import { useSummaryData } from "../hooks/useSummaryData";
 
 export default function HeroHeader() {
+  const { data } = useSummaryData();
+
+  // Live snapshot from backend (0–10 scale)
+  const snapshot10 = data?.snapshot ?? 0;
+
+  // Convert to 0–100 scale
+  const snapshot100 = Math.round(snapshot10 * 10);
+
   return (
     <section className="relative mb-8">
       <div className="relative overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950/80 shadow-xl">
@@ -94,7 +103,7 @@ export default function HeroHeader() {
                 <div className="flex flex-col">
                   <span className="text-[0.7rem] tracking-wide text-cyan-200/80">UK‑Weighted Score</span>
                   <span className="mt-0.5 text-3xl font-semibold tracking-tight text-cyan-100">
-                    7.4
+                    {snapshot100}
                     <span className="ml-1 text-xs font-medium text-emerald-300/90 align-middle">
                       • Good / DX‑favourable
                     </span>

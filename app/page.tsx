@@ -14,6 +14,8 @@ import QuickTake from "./components/QuickTake";
 import Footer from "./components/Footer";
 import CommentaryPanel from "./components/CommentaryPanel";
 import { gridGap } from "./lib/designSystem";
+import ForecastPanelV2 from "./components/ForecastPanelV2";
+import DXHeatmap from "./components/DXHeatmap";
 import { useSummaryData } from "./hooks/useSummaryData";
 
 export default function Home() {
@@ -115,7 +117,8 @@ export default function Home() {
           {commentary && <CommentaryPanel commentary={commentary} />}
 
           <AlertsPanel />
-          <ForecastPanel />
+          <ForecastPanelV2 />
+	  <DXHeatmap />
 
           {/* 📡 Band Table */}
           <BandTable bands={bandRows} />

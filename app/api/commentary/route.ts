@@ -74,11 +74,25 @@ export async function GET(request: Request) {
       advice = "20m remains the safest all‑round band for consistent contacts.";
     }
 
+    // ---- Snapshot Score (0–10 scale) ----
+    let snapshot = 5; // fallback
+
+    if (muf >= 30 && kp < 3) {
+      snapshot = 8;
+    } else if (muf >= 25 && kp < 4) {
+      snapshot = 7;
+    } else if (kp >= 4) {
+      snapshot = 3;
+    } else {
+      snapshot = 5;
+    }
+
     return Response.json({
       quickTake,
       trendInsights,
       bandNotes,
       advice,
+      snapshot,
     });
 
   } catch (err) {
@@ -89,6 +103,7 @@ export async function GET(request: Request) {
         trendInsights: [],
         bandNotes: {},
         advice: "Try again shortly.",
+        snapshot: 5,
       },
       { status: 500 }
     );
