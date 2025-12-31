@@ -27,7 +27,7 @@ export default function CommentaryPanel({ commentary }: { commentary: Commentary
       <div>
         <h3 className="text-neutral-300 font-semibold mb-2">Trend Insights</h3>
         <ul className="list-disc list-inside space-y-1 text-neutral-200">
-          {commentary.trendInsights.map((item, idx) => (
+          {(commentary.trendInsights ?? []).map((item, idx) => (
             <li key={idx}>{item}</li>
           ))}
         </ul>
@@ -37,7 +37,7 @@ export default function CommentaryPanel({ commentary }: { commentary: Commentary
       <div>
         <h3 className="text-neutral-300 font-semibold mb-2">Band Notes</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {Object.entries(commentary.bandNotes).map(([band, note]) => (
+          {Object.entries(commentary.bandNotes ?? {}).map(([band, note]) => (
             <div
               key={band}
               className="bg-neutral-800 border border-neutral-700 rounded-lg p-3"
