@@ -19,13 +19,13 @@ export default function BestBandNow() {
   }
 
   const nowStep = forecast[0];
+  const dxMap = nowStep?.dxProbability ?? {};
 
-  // Find the band with the highest DX probability
   let bestBand: BandKey = "80m";
   let bestDX = -1;
 
   for (const band of bands) {
-    const dx = nowStep.dxProbability[band] ?? 0;
+    const dx = dxMap[band] ?? 0;
     if (dx > bestDX) {
       bestDX = dx;
       bestBand = band;
