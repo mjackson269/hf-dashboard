@@ -7,11 +7,6 @@ async function fetchSolarData() {
   const url =
     "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json";
 
-const baseUrl =
-  process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000";
-
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch solar data");
 
@@ -35,6 +30,27 @@ async function fetchForecast() {
   if (!res.ok) throw new Error("Failed to fetch forecast");
 
   return await res.json();
+}
+
+// ------------------------------
+// Internal Current Fetch (patched)
+// ------------------------------
+async function fetchCurrent() {
+  const origin = "https://hf-dashboard-weld.vercel.app";
+  const res = await fetch(`${origin}/api/current`, { cache: "no-store" });
+  const raw = await res.text();
+
+  if (!res.ok) {
+    console.error("ERROR calling /api/current:", res.status, raw.slice(0, 200));
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    console.error("Invalid JSON from /api/current:", raw.slice(0, 200));
+    return null;
+  }
 }
 
 // ------------------------------
@@ -69,13 +85,29 @@ function computeBestBand(score: number) {
 }
 
 // ------------------------------
+// AI Commentary Generator
+// ------------------------------
+function generateCommentary(score: number, ssn: number) {
+  return {
+    markdown: `Solar activity is moderate. SSN is ${ssn.toFixed(1)}. Conditions are improving.`,
+    quickTake: score >= 70
+      ? "Expect decent propagation on 17m and 15m."
+      : "HF conditions are fair. 40m may be more reliable.",
+    severity: score >= 80 ? "Low" : score >= 60 ? "Moderate" : "High",
+    reason: score >= 70
+      ? "SSN is rising and Kp is stable."
+      : "SSN is low and noise levels may be elevated.",
+  };
+}
+
+// ------------------------------
 // API Route
 // ------------------------------
 export async function GET() {
   try {
     const solar = await fetchSolarData();
+    const current = await fetchCurrent();
 
-    // Forecast endpoint is currently offline — patch gracefully
     let forecast = null;
     try {
       forecast = await fetchForecast();
@@ -85,13 +117,21 @@ export async function GET() {
 
     const scoring = computeScore(solar);
     const bestBand = computeBestBand(scoring.score);
+    const commentary = generateCommentary(scoring.score, solar.ssn);
 
     return NextResponse.json({
       ok: true,
-      solar,
-      forecast, // may be null — but no crash
-      scoring,
+      markdown: commentary.markdown,
+      quickTake: commentary.quickTake,
+      severity: commentary.severity,
+      reason: commentary.reason,
+      score: scoring.score,
       bestBand,
+      bands: current?.bands ?? null,
+      solar,
+      current,
+      forecast,
+      scoring,
       timestamp: new Date().toISOString(),
     });
   } catch (err: any) {
@@ -101,7 +141,11 @@ export async function GET() {
         ok: false,
         error: err.message || "Unknown error",
         fallback: {
-          scoring: { score: 50, ssn: 0, smoothed_ssn: 0 },
+          markdown: "Summary unavailable.",
+          quickTake: "No data available.",
+          severity: "Unknown",
+          reason: "Upstream error",
+          score: 50,
           bestBand: "40m",
         },
       },
