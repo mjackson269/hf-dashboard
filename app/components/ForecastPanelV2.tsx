@@ -22,21 +22,16 @@ function classifyMufSupport(muf: number, band: BandKey) {
   return "Open";
 }
 
-// Day/night shading based on UTC hour in timeLabel ("HH:MM")
-function getShadingClassFromTimeLabel(timeLabel: string): string {
+// SAFE shading function
+function getShadingClassFromTimeLabel(timeLabel?: string): string {
+  if (!timeLabel || typeof timeLabel !== "string") return "";
   const hour = Number(timeLabel.substring(0, 2));
   if (Number.isNaN(hour)) return "";
 
-  // Daytime: 07–18 UTC
   if (hour >= 7 && hour < 18) return "";
-
-  // Sunrise: 05–07 UTC
   if ((hour >= 5 && hour < 7) || (hour >= 18 && hour < 20)) {
-    // Sunset: 18–20 UTC
     return "bg-neutral-900/20";
   }
-
-  // Night
   return "bg-neutral-900/40";
 }
 
@@ -44,8 +39,35 @@ export default function ForecastPanelV2() {
   const { data, isLoading } = useSummaryData();
   const [mode, setMode] = useState<"basic" | "advanced">("basic");
 
-  // Always define forecast so hooks never change order
-  const forecast = Array.isArray(data?.forecast24h) ? data.forecast24h : [];
+  // Always an array
+  const raw = Array.isArray(data?.forecast24h) ? data.forecast24h : [];
+
+  // Inject synthetic time labels + safe defaults
+  const forecast = raw.map((step, i) => ({
+    timeLabel: step.timeLabel ?? `${String(i).padStart(2, "0")}:00`,
+    dxProbability: step.dxProbability ?? {
+      "80m": 0,
+      "40m": 0,
+      "20m": 0,
+      "15m": 0,
+      "10m": 0,
+    },
+    snr: step.snr ?? {
+      "80m": 20,
+      "40m": 20,
+      "20m": 20,
+      "15m": 20,
+      "10m": 20,
+    },
+    absorption: step.absorption ?? {
+      "80m": 1,
+      "40m": 1,
+      "20m": 1,
+      "15m": 1,
+      "10m": 1,
+    },
+    muf: step.muf ?? data?.current?.muf ?? 12,
+  }));
 
   // Best DX window
   const bestDX = useMemo(() => {
@@ -79,15 +101,16 @@ export default function ForecastPanelV2() {
     });
   }, [forecast]);
 
-  // Timestamp
-  const now = new Date();
-  const formatted = now.toLocaleString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  // HYDRATION-SAFE TIMESTAMP (uses API timestamp, not new Date())
+  const formatted = data?.timestamp
+    ? new Date(data.timestamp).toLocaleString("en-GB", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
 
   if (isLoading || !forecast.length) {
     return <div className={card}>Loading forecast…</div>;

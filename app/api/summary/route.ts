@@ -4,65 +4,53 @@ import { NextResponse } from "next/server";
 // Fetch NOAA Solar Data
 // ---------------------------------------------------------
 async function fetchSolarData() {
-  const url =
-    "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json";
+  try {
+    const url =
+      "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json";
 
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to fetch solar data");
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error("Failed to fetch solar data");
 
-  const json = await res.json();
-  const latest = json[json.length - 1];
+    const json = await res.json();
+    const latest = json[json.length - 1];
 
-  return {
-    ssn: latest.ssn ?? 0,
-    smoothed_ssn: latest.smoothed_ssn ?? 0,
-    date: latest.time_tag,
-  };
+    return {
+      ssn: latest.ssn ?? 0,
+      smoothed_ssn: latest.smoothed_ssn ?? 0,
+      date: latest.time_tag,
+    };
+  } catch {
+    console.warn("Solar data unavailable — using fallback");
+    return {
+      ssn: 90,
+      smoothed_ssn: 85,
+      date: new Date().toISOString(),
+    };
+  }
 }
 
 // ---------------------------------------------------------
-// Fetch NOAA 27‑day Forecast
+// Fetch NOAA 3‑day Kp forecast
 // ---------------------------------------------------------
-async function fetchForecast() {
-  const url = "https://services.swpc.noaa.gov/json/27-day-outlook.json";
+async function fetchKpForecast() {
+  const url = "https://services.swpc.noaa.gov/json/geomag_forecast.json";
 
   const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to fetch forecast");
+  if (!res.ok) throw new Error("Failed to fetch Kp forecast");
 
   return await res.json();
 }
 
 // ---------------------------------------------------------
-// Extract 24h Forecast + DX Probability
+// Fetch NOAA 3‑day Solar Flux forecast
 // ---------------------------------------------------------
-function extractForecast24h(raw: any[]) {
-  if (!Array.isArray(raw) || raw.length === 0) {
-    return [
-      {
-        dxProbability: {
-          "80m": 0,
-          "40m": 0,
-          "20m": 0,
-          "15m": 0,
-          "10m": 0,
-        },
-      },
-    ];
-  }
+async function fetchSfiForecast() {
+  const url = "https://services.swpc.noaa.gov/json/f107_cm_flux.json";
 
-  const step = raw[0];
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to fetch SFI forecast");
 
-  return [
-    {
-      dxProbability: {
-        "80m": step.prob_80m ?? 0,
-        "40m": step.prob_40m ?? 0,
-        "20m": step.prob_20m ?? 0,
-        "15m": step.prob_15m ?? 0,
-        "10m": step.prob_10m ?? 0,
-      },
-    },
-  ];
+  return await res.json();
 }
 
 // ---------------------------------------------------------
@@ -71,20 +59,64 @@ function extractForecast24h(raw: any[]) {
 async function fetchCurrent() {
   const origin = "https://hf-dashboard-weld.vercel.app";
 
-  const res = await fetch(`${origin}/api/current`, { cache: "no-store" });
-  const raw = await res.text();
-
-  if (!res.ok) {
-    console.error("ERROR calling /api/current:", res.status, raw.slice(0, 200));
-    return null;
-  }
-
   try {
+    const res = await fetch(`${origin}/api/current`, { cache: "no-store" });
+    const raw = await res.text();
+
+    if (!res.ok) {
+      console.error("ERROR calling /api/current:", res.status, raw.slice(0, 200));
+      return null;
+    }
+
     return JSON.parse(raw);
-  } catch {
-    console.error("Invalid JSON from /api/current:", raw.slice(0, 200));
+  } catch (err) {
+    console.error("Invalid JSON from /api/current");
     return null;
   }
+}
+
+// ---------------------------------------------------------
+// Build 24h forecast from NOAA Kp + SFI
+// ---------------------------------------------------------
+function build24hForecast(kpData: any[], sfiData: any[]) {
+  const steps = [];
+
+  const kp = kpData?.[0]?.kp_predicted ?? 2;
+  const sfi = sfiData?.[0]?.f107 ?? 100;
+
+  for (let i = 0; i < 24; i++) {
+    const hour = `${String(i).padStart(2, "0")}:00`;
+
+    const muf = 12 + (sfi - 70) * 0.1;
+
+    steps.push({
+      timeLabel: hour,
+      muf: Number(muf.toFixed(1)),
+      dxProbability: {
+        "80m": Math.max(0, 100 - kp * 10),
+        "40m": Math.max(0, 100 - kp * 8),
+        "20m": Math.max(0, 100 - kp * 6),
+        "15m": Math.max(0, 100 - kp * 5),
+        "10m": Math.max(0, 100 - kp * 4),
+      },
+      snr: {
+        "80m": 20 - kp,
+        "40m": 22 - kp,
+        "20m": 25 - kp,
+        "15m": 28 - kp,
+        "10m": 30 - kp,
+      },
+      absorption: {
+        "80m": kp * 0.8,
+        "40m": kp * 0.6,
+        "20m": kp * 0.4,
+        "15m": kp * 0.3,
+        "10m": kp * 0.2,
+      },
+    });
+  }
+
+  return steps;
 }
 
 // ---------------------------------------------------------
@@ -146,14 +178,17 @@ export async function GET() {
     const solar = await fetchSolarData();
     const current = await fetchCurrent();
 
-    let forecastRaw = [];
+    let kpForecast = [];
+    let sfiForecast = [];
+
     try {
-      forecastRaw = await fetchForecast();
+      kpForecast = await fetchKpForecast();
+      sfiForecast = await fetchSfiForecast();
     } catch {
-      console.warn("Forecast unavailable — NOAA endpoint returned error");
+      console.warn("NOAA forecast unavailable — using fallback");
     }
 
-    const forecast24h = extractForecast24h(forecastRaw);
+    const forecast24h = build24hForecast(kpForecast, sfiForecast);
 
     const scoring = computeScore(solar);
     const bestBand = computeBestBand(scoring.score);
@@ -161,27 +196,17 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-
-      // AI summary fields
       markdown: commentary.markdown,
       quickTake: commentary.quickTake,
       severity: commentary.severity,
       reason: commentary.reason,
       score: scoring.score,
       bestBand,
-
-      // Band data (from /api/current)
       bands: current?.bands ?? null,
-
-      // Forecast data (for BestBandNow)
       forecast24h,
-
-      // Raw data
       solar,
       current,
-      forecast: forecastRaw,
       scoring,
-
       timestamp: new Date().toISOString(),
     });
   } catch (err: any) {

@@ -1,49 +1,35 @@
 "use client";
 
-import useSWR from "swr";
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+import { useEffect, useState } from "react";
 
 export function useSummaryData() {
-  const { data: ai, error, isLoading } = useSWR("/api/summary", fetcher);
-  const { data: current } = useSWR("/api/current", fetcher);
-  const { data: commentary } = useSWR("/api/commentary", fetcher);
-  const { data: forecast } = useSWR("/api/forecast", fetcher);
+  const [data, setData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!ai || !current || !commentary || !forecast) {
-    return {
-      data: null,
-      isLoading: isLoading || !current || !commentary || !forecast,
-      isError: error,
-    };
-  }
+  useEffect(() => {
+    let cancelled = false;
 
-  return {
-    data: {
-      markdown: ai.markdown,
-      bestBand: ai.bestBand,
-      reason: ai.reason,
-      quickTake: ai.quickTake,
-      severity: ai.severity,
-      score: ai.score,
+    async function load() {
+      try {
+        const res = await fetch("/api/summary", { cache: "no-store" });
+        const json = await res.json();
 
-      sfiEstimated: current.sfiEstimated,
-      sfiAdjusted: current.sfiAdjusted,
-      kp: current.kp,
-      muf: current.muf,
+        if (!cancelled) {
+          setData(json);       // IMPORTANT
+          setIsLoading(false); // IMPORTANT
+        }
+      } catch (err) {
+        console.error("useSummaryData error:", err);
+        if (!cancelled) {
+          setData(null);
+          setIsLoading(false);
+        }
+      }
+    }
 
-      sfiEstimatedPrev: current.sfiEstimatedPrev,
-      sfiAdjustedPrev: current.sfiAdjustedPrev,
-      kpPrev: current.kpPrev,
-      mufPrev: current.mufPrev,
+    load();
+    return () => { cancelled = true };
+  }, []);
 
-      bands: current.bands,
-
-      snapshot: commentary.snapshot,
-
-      forecast24h: forecast.forecast,
-    },
-    isLoading,
-    isError: error,
-  };
+  return { data, isLoading };
 }
