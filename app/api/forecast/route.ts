@@ -1,25 +1,26 @@
 // app/api/forecast/route.ts
 
 function getInternalUrl() {
-  return process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://127.0.0.1:3000";
+  // Always call the public production domain
+  return "https://hf-dashboard-weld.vercel.app";
 }
 
 export async function GET() {
   let current = null;
 
   try {
-    const baseUrl =
-  process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000";
+    const res = await fetch(`${getInternalUrl()}/api/current`, {
+      cache: "no-store",
+    });
 
-    const res = await fetch(`${getInternalUrl()}/api/current`, { cache: "no-store" });
     const raw = await res.text();
 
     if (!res.ok) {
-      console.error("ERROR calling /api/current:", res.status, raw.slice(0, 200));
+      console.error(
+        "ERROR calling /api/current:",
+        res.status,
+        raw.slice(0, 200)
+      );
     } else {
       try {
         current = JSON.parse(raw);
