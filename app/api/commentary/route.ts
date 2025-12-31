@@ -2,7 +2,9 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET(request: Request) {
-  const origin = new URL(request.url).origin;
+  // Force internal fetches to use the public production domain
+  const origin = "https://hf-dashboard-weld.vercel.app";
+
   let current = null;
 
   try {
