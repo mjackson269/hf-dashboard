@@ -73,11 +73,11 @@ export default function Home() {
   }
 
   // ---------------------------------------------
-  // Build bandRows for the Band Table
+  // Build bandRows for the Band Table (SAFE VERSION)
   // ---------------------------------------------
   let bandRows: any[] = [];
 
-  if (data?.bands) {
+  if (data?.bands && typeof data.bands === "object") {
     bandRows = Object.entries(data.bands).map(([band, info]: any) => {
       const score = scoreBand(info.mufSupport, info.snr);
 
@@ -112,7 +112,7 @@ export default function Home() {
         <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${gridGap}`}>
           <SummaryPanel />
           <CurrentPanel />
-	  <BestBandNow />
+          <BestBandNow />
           <ScorePanel />
 
           {/* ⭐ AI Commentary Panel */}
@@ -120,8 +120,8 @@ export default function Home() {
 
           <AlertsPanel />
           <ForecastPanelV2 />
-	  <DXOutlook />
-	  <DXHeatmap />
+          <DXOutlook />
+          <DXHeatmap />
 
           {/* 📡 Band Table */}
           <BandTable bands={bandRows} />
