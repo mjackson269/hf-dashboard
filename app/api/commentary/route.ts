@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET(request: Request) {
-  // Force internal fetches to use the public production domain
   const origin = "https://hf-dashboard-weld.vercel.app";
 
   let current = null;
@@ -33,12 +32,35 @@ export async function GET(request: Request) {
 
   if (!current) {
     return Response.json(
-      { commentary: "Propagation commentary unavailable due to upstream error." },
+      {
+        quickTake: "Propagation commentary unavailable due to upstream error.",
+        trendInsights: [],
+        bandNotes: {},
+        advice: "No operator advice available.",
+      },
       { status: 200 }
     );
   }
 
-  const commentary = `Solar flux is ${current.sfiEstimated}, Kp is ${current.kp}.`;
+  // Build structured commentary
+  const quickTake = `Solar flux is ${current.sfiEstimated}, Kp is ${current.kp}.`;
 
-  return Response.json({ commentary });
+  const trendInsights = [
+    `Solar flux trending at ${current.sfiEstimated}`,
+    `Geomagnetic conditions stable at Kp ${current.kp}`,
+  ];
+
+  const bandNotes = {
+    "20m": "Generally reliable during daylight hours.",
+    "40m": "Improves as evening approaches.",
+  };
+
+  const advice = "Monitor Kp for sudden spikes and adjust band choice accordingly.";
+
+  return Response.json({
+    quickTake,
+    trendInsights,
+    bandNotes,
+    advice,
+  });
 }
