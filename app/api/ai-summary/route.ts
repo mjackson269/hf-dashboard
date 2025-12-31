@@ -1,10 +1,9 @@
 // app/api/ai-summary/route.ts
 
 function getInternalUrl() {
-  return process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://127.0.0.1:3000";
+  return "https://hf-dashboard-weld.vercel.app";
 }
+
 
 type CurrentData = {
   sfiEstimated: number;
