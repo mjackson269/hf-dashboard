@@ -1,16 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { useSummaryData } from "../hooks/useSummaryData";
+import QuickReadPanel from "./QuickReadPanel";
 
 export default function HeroHeader() {
   const { data } = useSummaryData();
+  const [quickReadOpen, setQuickReadOpen] = useState(false);
 
-  // Live snapshot from backend (0–10 scale)
-  const snapshot10 = data?.snapshot ?? 0;
-
-  // Convert to 0–100 scale
-  const snapshot100 = Math.round(snapshot10 * 10);
+  // Live propagation score (0–100)
+  const score = data?.score ?? 0;
 
   return (
     <section className="relative mb-8">
@@ -103,9 +103,9 @@ export default function HeroHeader() {
                 <div className="flex flex-col">
                   <span className="text-[0.7rem] tracking-wide text-cyan-200/80">UK‑Weighted Score</span>
                   <span className="mt-0.5 text-3xl font-semibold tracking-tight text-cyan-100">
-                    {snapshot100}
+                    {score}
                     <span className="ml-1 text-xs font-medium text-emerald-300/90 align-middle">
-                      • Good / DX‑favourable
+                      • Live
                     </span>
                   </span>
                 </div>
@@ -123,7 +123,10 @@ export default function HeroHeader() {
             </div>
 
             {/* Quick Read Button */}
-            <button className="inline-flex items-center justify-between gap-2 rounded-lg border border-slate-700/80 bg-slate-950/60 px-3.5 py-2 text-[0.78rem] text-slate-100 shadow-lg shadow-black/40 transition hover:border-cyan-400/70 hover:bg-slate-900/80 hover:text-cyan-50">
+            <button
+              onClick={() => setQuickReadOpen(true)}
+              className="inline-flex items-center justify-between gap-2 rounded-lg border border-slate-700/80 bg-slate-950/60 px-3.5 py-2 text-[0.78rem] text-slate-100 shadow-lg shadow-black/40 transition hover:border-cyan-400/70 hover:bg-slate-900/80 hover:text-cyan-50"
+            >
               <div className="flex flex-col text-left">
                 <span className="text-[0.72rem] uppercase tracking-[0.16em] text-slate-400">
                   Quick Read
@@ -137,6 +140,15 @@ export default function HeroHeader() {
           </div>
         </div>
       </div>
+
+      {/* Quick Read Modal */}
+      {quickReadOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-xl border border-slate-700 bg-slate-900 shadow-xl">
+            <QuickReadPanel onClose={() => setQuickReadOpen(false)} />
+          </div>
+        </div>
+      )}
     </section>
   );
 }
