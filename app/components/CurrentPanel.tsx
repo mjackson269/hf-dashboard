@@ -1,56 +1,55 @@
 "use client";
 
 import { useSummaryData } from "../hooks/useSummaryData";
-import Tooltip from "./Tooltip";
-import { card, panelTitle, subtleText } from "../lib/designSystem";
+import { card, panelTitle } from "../lib/designSystem";
 
-export default function CurrentPanel() {
-  const { data, isLoading, isError } = useSummaryData();
+export default function CurrentHFConditionsPanel() {
+  const { data, isLoading } = useSummaryData();
+  const current = data?.current;
 
-  if (isLoading) {
-    return <div className={card}>Loading current conditions…</div>;
-  }
-
-  if (isError || !data) {
-    return <div className={card}>Error loading current conditions.</div>;
-  }
+  const formatted =
+    current?.timestamp && !Number.isNaN(Date.parse(current.timestamp))
+      ? new Date(current.timestamp).toLocaleString("en-GB", {
+          weekday: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "Unavailable";
 
   return (
     <div className={card}>
       <h2 className={panelTitle}>Current HF Conditions</h2>
 
-      <div className="space-y-3 text-sm">
+      {isLoading || !current ? (
+        <div className="mt-3 text-sm text-neutral-400">Loading HF conditions…</div>
+      ) : (
+        <>
+          <table className="w-full text-sm mt-3 border-collapse">
+            <tbody>
+              <tr>
+                <td className="py-1 text-neutral-400">SFI</td>
+                <td className="py-1 font-semibold text-slate-200">
+                  {current.sfi ?? "—"}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-1 text-neutral-400">Kp Index</td>
+                <td className="py-1 font-semibold text-slate-200">
+                  {current.kp ?? "—"}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-1 text-neutral-400">MUF</td>
+                <td className="py-1 font-semibold text-slate-200">
+                  {current.muf ? `${current.muf} MHz` : "—"}
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
-        {/* SFI Estimated */}
-        <div className="flex items-center gap-2">
-          <strong>SFI (Est):</strong> {data.sfiEstimated}
-          <Tooltip text="Estimated SFI updates every 3 hours from NOAA’s Geophysical Alert Message. Best for real‑time HF propagation." />
-        </div>
-
-        {/* SFI Adjusted */}
-        <div className="flex items-center gap-2">
-          <strong>SFI (Adj):</strong> {data.sfiAdjusted}
-          <Tooltip text="Adjusted SFI is the daily corrected flux from Penticton (Canada), published by NOAA." />
-        </div>
-
-        {/* Kp Index */}
-        <div className="flex items-center gap-2">
-          <strong>Kp Index:</strong> {data.kp}
-          <Tooltip text="Kp measures geomagnetic disturbance. Higher values degrade HF propagation, especially on higher bands." />
-        </div>
-
-        {/* MUF */}
-        <div className="flex items-center gap-2">
-          <strong>MUF:</strong> {data.muf} MHz
-          <Tooltip text="MUF determines which HF bands are open. Higher MUF supports higher‑frequency bands like 15m, 12m, and 10m." />
-        </div>
-
-        {/* Timestamp (optional, but looks clean) */}
-        <div className={subtleText}>
-          Updated just now
-        </div>
-
-      </div>
+          <div className="text-xs text-neutral-500 mt-2">Updated: {formatted}</div>
+        </>
+      )}
     </div>
   );
 }

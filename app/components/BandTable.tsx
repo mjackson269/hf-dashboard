@@ -1,77 +1,84 @@
-import React from "react";
+"use client";
 
-interface BandData {
-  band: string;
-  muf: number;
-  snr: number;
-  score: number;
-  status: string;
-  notes: string;
-}
+import { useSummaryData } from "../hooks/useSummaryData";
+import { card, panelTitle } from "../lib/designSystem";
 
-interface BandTableProps {
-  bands: BandData[];
-}
+type BandKey = "80m" | "40m" | "20m" | "15m" | "10m";
 
-const statusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case "excellent":
-    case "good":
-      return "bg-green-600 text-white";
-    case "fair":
-      return "bg-yellow-500 text-black";
-    case "poor":
-      return "bg-orange-600 text-white";
-    case "closed":
-      return "bg-red-600 text-white";
-    default:
-      return "bg-gray-500 text-white";
+const bands: BandKey[] = ["80m", "40m", "20m", "15m", "10m"];
+
+export default function BandTable() {
+  const { data, isLoading } = useSummaryData();
+
+  const current = data?.current;
+  const bandData = current?.bands;
+
+  if (isLoading) {
+    return <div className={card}>Loading band data…</div>;
   }
-};
 
-export const BandTable: React.FC<BandTableProps> = ({ bands }) => {
+  if (!bandData) {
+    return <div className={card}>No band data available.</div>;
+  }
+
   return (
-    <div className="w-full rounded-lg bg-gray-900 p-4 shadow-lg border border-gray-700">
-      <h2 className="text-xl font-semibold mb-4 text-white">Band Conditions</h2>
+    <div className={card}>
+      <h2 className={panelTitle}>Band Conditions</h2>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm text-gray-200">
-          <thead>
-            <tr className="bg-gray-800 text-gray-300 uppercase text-xs">
-              <th className="px-3 py-2 text-left">Band</th>
-              <th className="px-3 py-2 text-left">MUF</th>
-              <th className="px-3 py-2 text-left">SNR</th>
-              <th className="px-3 py-2 text-left">Score</th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left">Notes</th>
-            </tr>
-          </thead>
+      <table className="w-full text-sm mt-3 border-collapse">
+        <thead className="text-neutral-400">
+          <tr>
+            <th className="text-left py-1">Band</th>
+            <th className="text-left py-1">SNR (dB)</th>
+            <th className="text-left py-1">Absorption (dB)</th>
+            <th className="text-left py-1">DX (%)</th>
+          </tr>
+        </thead>
 
-          <tbody>
-            {bands.map((b) => (
-              <tr
-                key={b.band}
-                className="border-b border-gray-700 hover:bg-gray-800 transition"
-              >
-                <td className="px-3 py-2 font-medium text-white">{b.band}</td>
-                <td className="px-3 py-2">{b.muf.toFixed(1)}</td>
-                <td className="px-3 py-2">{b.snr.toFixed(1)} dB</td>
-                <td className="px-3 py-2">{b.score}</td>
-                <td className="px-3 py-2">
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-semibold ${statusColor(
-                      b.status
-                    )}`}
-                  >
-                    {b.status}
-                  </span>
-                </td>
-                <td className="px-3 py-2 text-gray-300">{b.notes}</td>
+        <tbody>
+          {bands.map((band) => {
+            const b = bandData[band];
+
+            if (!b) {
+              return (
+                <tr key={band} className="border-t border-neutral-800">
+                  <td className="py-1">{band}</td>
+                  <td colSpan={3} className="py-1 text-neutral-500">
+                    No data
+                  </td>
+                </tr>
+              );
+            }
+
+            const snrColor =
+              b.snr >= 30
+                ? "text-emerald-400"
+                : b.snr >= 20
+                ? "text-cyan-300"
+                : b.snr >= 10
+                ? "text-yellow-300"
+                : "text-red-400";
+
+            const dxColor =
+              b.dx >= 70
+                ? "text-emerald-400"
+                : b.dx >= 40
+                ? "text-cyan-300"
+                : b.dx >= 20
+                ? "text-yellow-300"
+                : "text-red-400";
+
+            return (
+              <tr key={band} className="border-t border-neutral-800">
+                <td className="py-1">{band}</td>
+                <td className={`py-1 font-semibold ${snrColor}`}>{b.snr}</td>
+                <td className="py-1 text-neutral-300">{b.absorption}</td>
+                <td className={`py-1 font-semibold ${dxColor}`}>{b.dx}%</td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
-};
+}

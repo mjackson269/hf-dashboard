@@ -1,230 +1,95 @@
 import { NextResponse } from "next/server";
 
-// ---------------------------------------------------------
-// Fetch NOAA Solar Data
-// ---------------------------------------------------------
-async function fetchSolarData() {
-  try {
-    const url =
-      "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json";
+// Compute DX score from SFI, Kp, MUF
+function computeScore(current: any): number {
+  const { sfi = 0, kp = 0, muf = 0 } = current;
 
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error("Failed to fetch solar data");
+  const snrScore = Math.min(Math.max((sfi - 60) / 60, 0), 1); // normalize SFI
+  const kpPenalty = kp >= 5 ? -0.5 : kp >= 3 ? -0.2 : 0;
+  const mufBonus = muf >= 14 ? 0.3 : muf >= 10 ? 0.1 : 0;
 
-    const json = await res.json();
-    const latest = json[json.length - 1];
-
-    return {
-      ssn: latest.ssn ?? 0,
-      smoothed_ssn: latest.smoothed_ssn ?? 0,
-      date: latest.time_tag,
-    };
-  } catch {
-    console.warn("Solar data unavailable — using fallback");
-    return {
-      ssn: 90,
-      smoothed_ssn: 85,
-      date: new Date().toISOString(),
-    };
-  }
+  return Math.round((snrScore + mufBonus + kpPenalty) * 100);
 }
 
-// ---------------------------------------------------------
-// Fetch NOAA 3‑day Kp forecast
-// ---------------------------------------------------------
-async function fetchKpForecast() {
-  const url = "https://services.swpc.noaa.gov/json/geomag_forecast.json";
-
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to fetch Kp forecast");
-
-  return await res.json();
-}
-
-// ---------------------------------------------------------
-// Fetch NOAA 3‑day Solar Flux forecast
-// ---------------------------------------------------------
-async function fetchSfiForecast() {
-  const url = "https://services.swpc.noaa.gov/json/f107_cm_flux.json";
-
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to fetch SFI forecast");
-
-  return await res.json();
-}
-
-// ---------------------------------------------------------
-// Fetch Internal /api/current
-// ---------------------------------------------------------
-async function fetchCurrent() {
-  const origin = "https://hf-dashboard-weld.vercel.app";
-
-  try {
-    const res = await fetch(`${origin}/api/current`, { cache: "no-store" });
-    const raw = await res.text();
-
-    if (!res.ok) {
-      console.error("ERROR calling /api/current:", res.status, raw.slice(0, 200));
-      return null;
-    }
-
-    return JSON.parse(raw);
-  } catch (err) {
-    console.error("Invalid JSON from /api/current");
-    return null;
-  }
-}
-
-// ---------------------------------------------------------
-// Build 24h forecast from NOAA Kp + SFI
-// ---------------------------------------------------------
-function build24hForecast(kpData: any[], sfiData: any[]) {
-  const steps = [];
-
-  const kp = kpData?.[0]?.kp_predicted ?? 2;
-  const sfi = sfiData?.[0]?.f107 ?? 100;
-
-  for (let i = 0; i < 24; i++) {
-    const hour = `${String(i).padStart(2, "0")}:00`;
-
-    const muf = 12 + (sfi - 70) * 0.1;
-
-    steps.push({
-      timeLabel: hour,
-      muf: Number(muf.toFixed(1)),
-      dxProbability: {
-        "80m": Math.max(0, 100 - kp * 10),
-        "40m": Math.max(0, 100 - kp * 8),
-        "20m": Math.max(0, 100 - kp * 6),
-        "15m": Math.max(0, 100 - kp * 5),
-        "10m": Math.max(0, 100 - kp * 4),
-      },
-      snr: {
-        "80m": 20 - kp,
-        "40m": 22 - kp,
-        "20m": 25 - kp,
-        "15m": 28 - kp,
-        "10m": 30 - kp,
-      },
-      absorption: {
-        "80m": kp * 0.8,
-        "40m": kp * 0.6,
-        "20m": kp * 0.4,
-        "15m": kp * 0.3,
-        "10m": kp * 0.2,
-      },
-    });
-  }
-
-  return steps;
-}
-
-// ---------------------------------------------------------
-// Scoring Model
-// ---------------------------------------------------------
-function computeScore(solar: any) {
-  const ssn = solar.ssn ?? 0;
-
-  let score = 0;
-  if (ssn > 150) score = 90;
-  else if (ssn > 120) score = 80;
-  else if (ssn > 90) score = 70;
-  else if (ssn > 60) score = 60;
-  else if (ssn > 30) score = 50;
-  else score = 40;
+// AI commentary generator
+function generateCommentary(current: any) {
+  const { sfi = 0, kp = 0 } = current;
 
   return {
-    score,
-    ssn,
-    smoothed_ssn: solar.smoothed_ssn,
+    quickTake: `Solar flux is ${sfi}, Kp is ${kp}.`,
+    trendInsights: [
+      `Solar flux trending at ${sfi}`,
+      `Geomagnetic conditions stable at Kp ${kp}`,
+    ],
+    bandNotes: {
+      "20m": "Strong daytime performance.",
+      "40m": "Improves toward evening.",
+    },
+    operatorAdvice: "Monitor Kp for sudden spikes.",
   };
 }
 
-// ---------------------------------------------------------
-// Best Band (simple model)
-// ---------------------------------------------------------
-function computeBestBand(score: number) {
-  if (score >= 80) return "20m";
-  if (score >= 70) return "17m";
-  if (score >= 60) return "15m";
-  return "40m";
+// OPTION A — Restore old forecast format with dxProbability
+function generateForecast(current: any) {
+  const bands = current?.bands ?? {};
+
+  return Array.from({ length: 24 }, (_, i) => {
+    const timeLabel = `${String(i).padStart(2, "0")}:00`;
+
+    // Build dxProbability object expected by DXOutlook
+    const dxProbability = Object.fromEntries(
+      Object.entries(bands).map(([band, stats]: any) => [
+        band,
+        stats.dx ?? 0,
+      ])
+    );
+
+    return {
+      timeLabel,
+      dxProbability,
+    };
+  });
 }
 
-// ---------------------------------------------------------
-// Commentary Generator
-// ---------------------------------------------------------
-function generateCommentary(score: number, ssn: number) {
-  return {
-    markdown: `Solar activity is moderate. SSN is ${ssn.toFixed(
-      1
-    )}. Conditions are improving.`,
-    quickTake:
-      score >= 70
-        ? "Expect decent propagation on 17m and 15m."
-        : "HF conditions are fair. 40m may be more reliable.",
-    severity: score >= 80 ? "Low" : score >= 60 ? "Moderate" : "High",
-    reason:
-      score >= 70
-        ? "SSN is rising and Kp is stable."
-        : "SSN is low and noise levels may be elevated.",
-  };
+// Static alerts (replace with NOAA feed later)
+function fetchAlerts() {
+  return [
+    {
+      type: "Solar Flare — M-class",
+      message:
+        "Moderate solar flare detected. Possible HF disruption in polar regions.",
+      issued: "2025-12-22T18:00:00Z",
+    },
+    {
+      type: "Geomagnetic Storm — G2",
+      message:
+        "Kp index elevated. Expect degraded conditions on 80m and 160m bands.",
+      issued: "2025-12-22T12:00:00Z",
+    },
+  ];
 }
 
-// ---------------------------------------------------------
-// API Route
-// ---------------------------------------------------------
 export async function GET() {
   try {
-    const solar = await fetchSolarData();
-    const current = await fetchCurrent();
-
-    let kpForecast = [];
-    let sfiForecast = [];
-
-    try {
-      kpForecast = await fetchKpForecast();
-      sfiForecast = await fetchSfiForecast();
-    } catch {
-      console.warn("NOAA forecast unavailable — using fallback");
-    }
-
-    const forecast24h = build24hForecast(kpForecast, sfiForecast);
-
-    const scoring = computeScore(solar);
-    const bestBand = computeBestBand(scoring.score);
-    const commentary = generateCommentary(scoring.score, solar.ssn);
-
-    return NextResponse.json({
-      ok: true,
-      markdown: commentary.markdown,
-      quickTake: commentary.quickTake,
-      severity: commentary.severity,
-      reason: commentary.reason,
-      score: scoring.score,
-      bestBand,
-      bands: current?.bands ?? null,
-      forecast24h,
-      solar,
-      current,
-      scoring,
-      timestamp: new Date().toISOString(),
+    const res = await fetch("http://localhost:3000/api/current", {
+      cache: "no-store",
     });
-  } catch (err: any) {
-    console.error("SUMMARY ROUTE ERROR:", err);
 
+    const current = await res.json();
+
+    const summary = {
+      current,
+      score: computeScore(current),
+      commentary: generateCommentary(current),
+      forecast24h: generateForecast(current), // ← Option A fix
+      alerts: fetchAlerts(),
+    };
+
+    return NextResponse.json(summary);
+  } catch (err) {
+    console.error("Summary API error:", err);
     return NextResponse.json(
-      {
-        ok: false,
-        error: err.message ?? "Unknown error",
-        fallback: {
-          markdown: "Summary unavailable.",
-          quickTake: "No data available.",
-          severity: "Unknown",
-          reason: "Upstream error",
-          score: 50,
-          bestBand: "40m",
-        },
-      },
+      { error: "Failed to fetch summary data" },
       { status: 500 }
     );
   }

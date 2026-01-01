@@ -22,7 +22,6 @@ function classifyMufSupport(muf: number, band: BandKey) {
   return "Open";
 }
 
-// SAFE shading function
 function getShadingClassFromTimeLabel(timeLabel?: string): string {
   if (!timeLabel || typeof timeLabel !== "string") return "";
   const hour = Number(timeLabel.substring(0, 2));
@@ -39,32 +38,17 @@ export default function ForecastPanelV2() {
   const { data, isLoading } = useSummaryData();
   const [mode, setMode] = useState<"basic" | "advanced">("basic");
 
-  // Always an array
   const raw = Array.isArray(data?.forecast24h) ? data.forecast24h : [];
 
-  // Inject synthetic time labels + safe defaults
+  // FIX: forecast now uses the new API shape
   const forecast = raw.map((step, i) => ({
     timeLabel: step.timeLabel ?? `${String(i).padStart(2, "0")}:00`,
-    dxProbability: step.dxProbability ?? {
-      "80m": 0,
-      "40m": 0,
-      "20m": 0,
-      "15m": 0,
-      "10m": 0,
-    },
-    snr: step.snr ?? {
-      "80m": 20,
-      "40m": 20,
-      "20m": 20,
-      "15m": 20,
-      "10m": 20,
-    },
-    absorption: step.absorption ?? {
-      "80m": 1,
-      "40m": 1,
-      "20m": 1,
-      "15m": 1,
-      "10m": 1,
+    bands: step.bands ?? {
+      "80m": { snr: 20, absorption: 1, dx: 0 },
+      "40m": { snr: 20, absorption: 1, dx: 0 },
+      "20m": { snr: 20, absorption: 1, dx: 0 },
+      "15m": { snr: 20, absorption: 1, dx: 0 },
+      "10m": { snr: 20, absorption: 1, dx: 0 },
     },
     muf: step.muf ?? data?.current?.muf ?? 12,
   }));
@@ -77,7 +61,7 @@ export default function ForecastPanelV2() {
 
     forecast.forEach((step: any) => {
       for (const band of bands) {
-        const dx = step.dxProbability?.[band] ?? 0;
+        const dx = step.bands?.[band]?.dx ?? 0;
         if (dx > best.dx) {
           best = { step, band, dx };
         }
@@ -92,16 +76,16 @@ export default function ForecastPanelV2() {
     if (!forecast.length) return [];
 
     return forecast.map((step: any) => {
-      const entries = Object.entries(step.dxProbability || {}) as [
+      const entries = Object.entries(step.bands || {}) as [
         BandKey,
-        number
+        { dx: number }
       ][];
-      const sorted = entries.sort((a, b) => b[1] - a[1]);
+      const sorted = entries.sort((a, b) => b[1].dx - a[1].dx);
       return sorted[0]?.[0] || null;
     });
   }, [forecast]);
 
-  // HYDRATION-SAFE TIMESTAMP (uses API timestamp, not new Date())
+  // Hydration-safe timestamp
   const formatted = data?.timestamp
     ? new Date(data.timestamp).toLocaleString("en-GB", {
         weekday: "short",
@@ -118,7 +102,6 @@ export default function ForecastPanelV2() {
 
   return (
     <div className={card}>
-      {/* Header + toggle */}
       <div className="flex items-center justify-between mb-3">
         <h2 className={panelTitle}>24h Propagation Forecast</h2>
 
@@ -130,7 +113,6 @@ export default function ForecastPanelV2() {
         </button>
       </div>
 
-      {/* Best DX summary */}
       <div className="mb-3 text-xs text-neutral-300">
         {bestDX && bestDX.step && (
           <>
@@ -145,7 +127,7 @@ export default function ForecastPanelV2() {
         <div className="text-neutral-500 mt-1">Updated: {formatted}</div>
       </div>
 
-      {/* Mobile layout */}
+      {/* Mobile */}
       <div className="md:hidden space-y-3">
         {forecast.map((step: any, i: number) => (
           <div
@@ -164,6 +146,8 @@ export default function ForecastPanelV2() {
             </div>
 
             {bands.map((band) => {
+              const bandData = step.bands[band];
+
               if (mode === "basic") {
                 const support = classifyMufSupport(step.muf, band);
                 return (
@@ -188,7 +172,7 @@ export default function ForecastPanelV2() {
                 <div key={band} className="flex justify-between text-xs py-1">
                   <span className="text-neutral-300">{band}</span>
                   <span className="text-neutral-400">
-                    DX {step.dxProbability[band]}% | SNR {step.snr[band]} dB
+                    DX {bandData.dx}% | SNR {bandData.snr} dB
                   </span>
                 </div>
               );
@@ -197,7 +181,7 @@ export default function ForecastPanelV2() {
         ))}
       </div>
 
-      {/* Desktop layout */}
+      {/* Desktop */}
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-[0.75rem] border-collapse">
           <thead className="text-neutral-400">
@@ -228,6 +212,7 @@ export default function ForecastPanelV2() {
 
                 {forecast.map((step: any, i: number) => {
                   const shading = getShadingClassFromTimeLabel(step.timeLabel);
+                  const bandData = step.bands[band];
 
                   if (mode === "basic") {
                     const support = classifyMufSupport(step.muf, band);
@@ -252,9 +237,9 @@ export default function ForecastPanelV2() {
                     );
                   }
 
-                  const snr = step.snr[band];
-                  const dx = step.dxProbability[band];
-                  const absorption = step.absorption[band];
+                  const snr = bandData.snr;
+                  const dx = bandData.dx;
+                  const absorption = bandData.absorption;
 
                   const snrColor =
                     snr >= 30

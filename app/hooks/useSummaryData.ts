@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
 export function useSummaryData() {
   const [data, setData] = useState<any>(null);
@@ -15,8 +15,8 @@ export function useSummaryData() {
         const json = await res.json();
 
         if (!cancelled) {
-          setData(json);       // IMPORTANT
-          setIsLoading(false); // IMPORTANT
+          setData(json);
+          setIsLoading(false);
         }
       } catch (err) {
         console.error("useSummaryData error:", err);
@@ -28,7 +28,10 @@ export function useSummaryData() {
     }
 
     load();
-    return () => { cancelled = true };
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return { data, isLoading };

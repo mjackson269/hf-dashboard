@@ -5,59 +5,55 @@ import Tooltip from "./Tooltip";
 import { card, badge } from "../lib/designSystem";
 import TrendIndicator from "./TrendIndicator";
 
-
 export default function StatusBar() {
-  const { data, isLoading, isError } = useSummaryData();
+  const { data, isLoading } = useSummaryData();
 
-  if (isLoading || !data) {
+  if (isLoading || !data?.current) {
     return <div className={`${card} mb-4`}>Loading status…</div>;
   }
 
-  if (isError) {
-    return <div className={`${card} mb-4`}>Error loading status.</div>;
-  }
+  const current = data.current;
 
-  const band = data.bestBand;
-  const reason = data.reason;
+  // Compute best band from live band data
+  const bands = current.bands ?? {};
+  const best = Object.entries(bands)
+    .sort((a, b) => b[1].dx - a[1].dx)[0];
+
+  const bestBand = best?.[0] ?? "—";
+  const reason = best ? `DX probability ${best[1].dx}%` : "No band data";
 
   const bandColor =
-    band === "10m" ? "bg-green-600" :
-    band === "12m" ? "bg-emerald-600" :
-    band === "15m" ? "bg-blue-600" :
-    band === "17m" ? "bg-indigo-600" :
-    band === "20m" ? "bg-purple-600" :
-    band === "30m" ? "bg-yellow-500 text-black" :
+    bestBand === "10m" ? "bg-green-600" :
+    bestBand === "12m" ? "bg-emerald-600" :
+    bestBand === "15m" ? "bg-blue-600" :
+    bestBand === "17m" ? "bg-indigo-600" :
+    bestBand === "20m" ? "bg-purple-600" :
+    bestBand === "30m" ? "bg-yellow-500 text-black" :
     "bg-gray-600";
 
   return (
     <div className={`${card} mb-6 flex flex-wrap gap-6 items-center text-sm`}>
 
       <div className="flex items-center gap-2">
-        <strong>SFI (Est):</strong> {data.sfiEstimated}
-	<TrendIndicator current={data.sfiEstimated} previous={data.sfiEstimatedPrev} />
-        <Tooltip text="Estimated SFI updates every 3 hours from NOAA’s Geophysical Alert Message." />
+        <strong>SFI:</strong> {current.sfi ?? "—"}
+        <TrendIndicator current={current.sfi} previous={null} />
+        <Tooltip text="Solar Flux Index from NOAA." />
       </div>
 
       <div className="flex items-center gap-2">
-        <strong>SFI (Adj):</strong> {data.sfiAdjusted}
-	<TrendIndicator current={data.sfiAdjusted} previous={data.sfiAdjustedPrev} />
-        <Tooltip text="Adjusted SFI is the daily corrected flux from Penticton (Canada)." />
+        <strong>Kp:</strong> {current.kp ?? "—"}
+        <TrendIndicator current={current.kp} previous={null} />
+        <Tooltip text="Geomagnetic disturbance index." />
       </div>
 
       <div className="flex items-center gap-2">
-        <strong>Kp:</strong> {data.kp}
-	<TrendIndicator current={data.kp} previous={data.kpPrev} />
-        <Tooltip text="Kp measures geomagnetic disturbance. Higher values degrade HF propagation." />
-      </div>
-
-      <div className="flex items-center gap-2">
-        <strong>MUF:</strong> {data.muf} MHz
-	<TrendIndicator current={data.muf} previous={data.mufPrev} />
-        <Tooltip text="MUF determines which HF bands are open." />
+        <strong>MUF:</strong> {current.muf ? `${current.muf} MHz` : "—"}
+        <TrendIndicator current={current.muf} previous={null} />
+        <Tooltip text="Maximum usable frequency." />
       </div>
 
       <div className={`${badge} ${bandColor}`}>
-        Best Band: {band}
+        Best Band: {bestBand}
         <Tooltip text={reason} />
       </div>
 

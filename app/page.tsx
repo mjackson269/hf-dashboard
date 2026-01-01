@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import ForceCSS from "./force-css";
-import { BandTable } from "./components/BandTable";
+import BandTable from "./components/BandTable";
 import HeroHeader from "./components/HeroHeader";
 import StatusBar from "./components/StatusBar";
 import SummaryPanel from "./components/SummaryPanel";
