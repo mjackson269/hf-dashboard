@@ -30,7 +30,7 @@ function computeScore(current: any) {
   return Math.min(100, Math.round(rawScore));
 }
 
-// Generate simple commentary (placeholder for AI)
+// Generate simple commentary (kept but not returned)
 function generateCommentary(current: any, score: number) {
   return {
     quickTake:
@@ -64,19 +64,22 @@ export async function GET() {
   try {
     const current = await fetchCurrent();
 
-    // 🔥 Add kp_est (fallback to kp if missing)
+    // Add kp_est (fallback to kp if missing)
     current.kp_est = current.kp_est ?? current.kp ?? null;
 
     const score = computeScore(current);
+
+    // Commentary is generated but NOT returned
     const commentary = generateCommentary(current, score);
+
     const forecast24h = generateForecast(current);
 
     return NextResponse.json({
       current,
       score,
-      commentary,
       forecast24h,
       alerts: [],
+      // commentary intentionally removed from response
     });
   } catch (error) {
     console.error("Summary API error:", error);

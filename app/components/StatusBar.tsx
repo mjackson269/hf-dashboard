@@ -10,6 +10,7 @@ export default function StatusBar() {
   const { data, isLoading } = useSummaryData();
   const [previous, setPrevious] = useState<any>(null);
 
+  // Track previous values for trend arrows
   useEffect(() => {
     if (data?.current) {
       setPrevious((prev: any) => ({
@@ -34,6 +35,7 @@ export default function StatusBar() {
   const bestBand = best?.[0] ?? "—";
   const reason = best ? `DX probability ${best[1].dx}%` : "No band data";
 
+  // Band colour mapping
   const bandColor =
     bestBand === "10m" ? "bg-green-600" :
     bestBand === "12m" ? "bg-emerald-600" :
@@ -67,7 +69,7 @@ export default function StatusBar() {
         <Tooltip text="Maximum usable frequency." />
       </div>
 
-      {/* Best Band */}
+      {/* Best Band Badge */}
       <div className={`${badge} ${bandColor}`}>
         Best Band: {bestBand}
         <Tooltip text={reason} />
