@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useSummaryData } from "../hooks/useSummaryData";
 import Tooltip from "./Tooltip";
 import { card, badge } from "../lib/designSystem";
@@ -7,6 +8,17 @@ import TrendIndicator from "./TrendIndicator";
 
 export default function StatusBar() {
   const { data, isLoading } = useSummaryData();
+  const [previous, setPrevious] = useState<any>(null);
+
+  useEffect(() => {
+    if (data?.current) {
+      setPrevious((prev: any) => ({
+        sfi: prev?.sfi ?? data.current.sfi,
+        kp_est: prev?.kp_est ?? data.current.kp_est,
+        muf: prev?.muf ?? data.current.muf,
+      }));
+    }
+  }, [data?.current]);
 
   if (isLoading || !data?.current) {
     return <div className={`${card} mb-4`}>Loading status…</div>;
@@ -34,24 +46,28 @@ export default function StatusBar() {
   return (
     <div className={`${card} mb-6 flex flex-wrap gap-6 items-center text-sm`}>
 
+      {/* SFI */}
       <div className="flex items-center gap-2">
         <strong>SFI:</strong> {current.sfi ?? "—"}
-        <TrendIndicator current={current.sfi} previous={null} />
+        <TrendIndicator current={current.sfi} previous={previous?.sfi} />
         <Tooltip text="Solar Flux Index from NOAA." />
       </div>
 
+      {/* Kp (decimal, live, accurate) */}
       <div className="flex items-center gap-2">
-        <strong>Kp:</strong> {current.kp ?? "—"}
-        <TrendIndicator current={current.kp} previous={null} />
-        <Tooltip text="Geomagnetic disturbance index." />
+        <strong>Kp:</strong> {current.kp_est?.toFixed(1) ?? "—"}
+        <TrendIndicator current={current.kp_est} previous={previous?.kp_est} />
+        <Tooltip text="Real-time estimated Kp index." />
       </div>
 
+      {/* MUF */}
       <div className="flex items-center gap-2">
         <strong>MUF:</strong> {current.muf ? `${current.muf} MHz` : "—"}
-        <TrendIndicator current={current.muf} previous={null} />
+        <TrendIndicator current={current.muf} previous={previous?.muf} />
         <Tooltip text="Maximum usable frequency." />
       </div>
 
+      {/* Best Band */}
       <div className={`${badge} ${bandColor}`}>
         Best Band: {bestBand}
         <Tooltip text={reason} />

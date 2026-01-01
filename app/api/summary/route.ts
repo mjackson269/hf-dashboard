@@ -26,7 +26,7 @@ function computeScore(current: any) {
   // Raw score (0–130 possible)
   const rawScore = (snrScore + mufBonus + kpPenalty) * 100;
 
-  // Option A: Hard cap at 100
+  // Hard cap at 100
   return Math.min(100, Math.round(rawScore));
 }
 
@@ -63,6 +63,10 @@ function generateForecast(current: any) {
 export async function GET() {
   try {
     const current = await fetchCurrent();
+
+    // 🔥 Add kp_est (fallback to kp if missing)
+    current.kp_est = current.kp_est ?? current.kp ?? null;
+
     const score = computeScore(current);
     const commentary = generateCommentary(current, score);
     const forecast24h = generateForecast(current);
