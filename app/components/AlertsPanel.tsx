@@ -1,23 +1,27 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { card, panelTitle, badge, subtleText } from "../lib/designSystem";
 
 export default function AlertsPanel() {
-  // Replace with your real alerts fetch/hook
-  const alerts = [
-    {
-      type: "Solar Flare — M-class",
-      description: "Moderate solar flare detected. Possible HF disruption in polar regions.",
-      issued: "22/12/2025, 18:00:00",
-      severity: "high",
-    },
-    {
-      type: "Geomagnetic Storm — G2",
-      description: "Kp index elevated. Expect degraded conditions on 80m and 160m bands.",
-      issued: "22/12/2025, 12:00:00",
-      severity: "medium",
-    },
-  ];
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadAlerts() {
+      try {
+        const res = await fetch("/api/commentary", { cache: "no-store" });
+        const json = await res.json();
+        setAlerts(json.alerts || []);
+      } catch (err) {
+        console.error("Failed to load alerts:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadAlerts();
+  }, []);
 
   const severityColor = (level: string) =>
     level === "high"
@@ -30,6 +34,19 @@ export default function AlertsPanel() {
     <div className={card}>
       <h2 className={panelTitle}>HF Propagation Alerts</h2>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="text-sm text-neutral-400">Loading alerts…</div>
+      )}
+
+      {/* No Alerts */}
+      {!loading && alerts.length === 0 && (
+        <div className="text-sm text-neutral-400">
+          No active HF propagation alerts.
+        </div>
+      )}
+
+      {/* Alerts List */}
       <div className="space-y-4 text-sm">
         {alerts.map((alert, i) => (
           <div key={i} className="space-y-1">
@@ -39,7 +56,12 @@ export default function AlertsPanel() {
 
             <p>{alert.description}</p>
 
-            <div className={subtleText}>Issued: {alert.issued}</div>
+            <div className={subtleText}>
+              Issued:{" "}
+              {alert.issued
+                ? new Date(alert.issued).toLocaleString()
+                : "Unknown"}
+            </div>
           </div>
         ))}
       </div>

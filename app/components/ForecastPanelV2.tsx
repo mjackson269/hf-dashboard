@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSummaryData } from "../hooks/useSummaryData";
 import { card, panelTitle } from "../lib/designSystem";
 
@@ -38,9 +38,28 @@ export default function ForecastPanelV2() {
   const { data, isLoading } = useSummaryData();
   const [mode, setMode] = useState<"basic" | "advanced">("basic");
 
-  const raw = Array.isArray(data?.forecast24h) ? data.forecast24h : [];
+  // Commentary fetch (for forecast24h + timestamp)
+  const [commentary, setCommentary] = useState<any>(null);
 
-  // FIX: forecast now uses the new API shape
+  useEffect(() => {
+    async function loadCommentary() {
+      try {
+        const res = await fetch("/api/commentary", { cache: "no-store" });
+        const json = await res.json();
+        setCommentary(json);
+      } catch (err) {
+        console.error("Failed to load commentary:", err);
+      }
+    }
+
+    loadCommentary();
+  }, []);
+
+  // Forecast source
+  const raw = Array.isArray(commentary?.forecast24h)
+    ? commentary.forecast24h
+    : [];
+
   const forecast = raw.map((step, i) => ({
     timeLabel: step.timeLabel ?? `${String(i).padStart(2, "0")}:00`,
     bands: step.bands ?? {
@@ -85,9 +104,9 @@ export default function ForecastPanelV2() {
     });
   }, [forecast]);
 
-  // Hydration-safe timestamp
-  const formatted = data?.timestamp
-    ? new Date(data.timestamp).toLocaleString("en-GB", {
+  // Timestamp from commentary
+  const formatted = commentary?.generatedAt
+    ? new Date(commentary.generatedAt).toLocaleString("en-GB", {
         weekday: "short",
         day: "numeric",
         month: "short",

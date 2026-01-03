@@ -1,19 +1,64 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { generateDeterministicAlerts } from "@/app/lib/alertsEngine";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// DeepSeek / OpenAI-compatible client
-const client = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: "https://api.deepseek.com", // adjust if needed
-});
+// ---------------------------------------------------------
+// Timeout wrapper
+// ---------------------------------------------------------
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error("AI timeout")), ms)
+    ),
+  ]);
+}
 
+// ---------------------------------------------------------
+// Extract JSON safely from AI output
+// ---------------------------------------------------------
+function extractJson(text: string): string {
+  text = text.replace(/```json/gi, "").replace(/```/g, "");
+
+  const first = text.indexOf("{");
+  const last = text.lastIndexOf("}");
+
+  if (first === -1 || last === -1) {
+    throw new Error("No JSON object found in AI response");
+  }
+
+  return text.substring(first, last + 1);
+}
+
+// ---------------------------------------------------------
+// Provider selection
+// ---------------------------------------------------------
+function getProviderConfig(provider: string) {
+  if (provider === "deepseek") {
+    return {
+      url: "https://api.deepseek.com/v1/chat/completions",
+      model: "deepseek-chat",
+      key: process.env.DEEPSEEK_API_KEY,
+    };
+  }
+
+  // Default = Groq
+  return {
+    url: "https://api.groq.com/openai/v1/chat/completions",
+    model: "llama-3.3-70b-versatile",
+    key: process.env.GROQ_API_KEY,
+  };
+}
+
+// ---------------------------------------------------------
+// MAIN ROUTE
+// ---------------------------------------------------------
 export async function GET() {
   const origin = "https://hf-dashboard-weld.vercel.app";
 
-  let current = null;
+  let current: any = null;
 
   // ---------------------------------------------------------
   // Fetch live propagation data
@@ -23,20 +68,28 @@ export async function GET() {
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json",
+        Accept: "application/json",
       },
     });
 
     current = await res.json();
   } catch (err) {
+    console.error("Failed to fetch /api/current:", err);
     return NextResponse.json({
       quickTake: "Propagation commentary unavailable.",
       trendInsights: [],
       bandNotes: {},
       advice: "No operator advice available.",
+      alerts: [],
+      forecast24h: [],
       generatedAt: new Date().toISOString(),
     });
   }
+
+  // ---------------------------------------------------------
+  // Deterministic Alerts (Hybrid System Part 1)
+  // ---------------------------------------------------------
+  const deterministicAlerts = generateDeterministicAlerts(current);
 
   // ---------------------------------------------------------
   // Build payload for the AI
@@ -47,112 +100,128 @@ export async function GET() {
     muf: current.muf,
     bands: current.bands,
     score: current.score,
-    forecast24h: current.forecast24h,
+    forecast24h: current.forecast24h ?? [],
   };
 
   // ---------------------------------------------------------
-  // Operator-grade system prompt
+  // System Prompt
   // ---------------------------------------------------------
   const systemPrompt = `
-You are an HF radio propagation analyst generating a concise, operator-grade briefing for UK amateur radio conditions. 
-Your tone is factual, confident, and technically aware. Avoid filler language.
+You are an HF radio propagation analyst generating a concise, operator-grade briefing for UK amateur radio conditions.
+Your tone is factual, confident, and technically aware.
 
-You will receive:
-- Solar Flux Index (SFI)
-- Estimated Kp index (kp)
-- Maximum Usable Frequency (MUF)
-- Band performance data (snr, absorption, dx probability)
-- A computed propagation score (0–100)
-- A 24h MUF/DX forecast
-
-Produce a JSON object with the following fields:
+Return ONLY a JSON object with the following structure:
 
 {
   "quickTake": string,
   "trendInsights": string[],
   "bandNotes": { [band: string]: string },
   "advice": string,
+  "alerts": [
+    {
+      "type": string,
+      "description": string,
+      "severity": "low" | "medium" | "high",
+      "issued": string
+    }
+  ],
+  "forecast24h": [
+    {
+      "timeLabel": string,
+      "muf": number,
+      "bands": {
+        "80m": { "snr": number, "absorption": number, "dx": number },
+        "40m": { "snr": number, "absorption": number, "dx": number },
+        "20m": { "snr": number, "absorption": number, "dx": number },
+        "15m": { "snr": number, "absorption": number, "dx": number },
+        "10m": { "snr": number, "absorption": number, "dx": number }
+      }
+    }
+  ],
   "generatedAt": string
 }
 
-Guidelines:
-
-1. QUICK TAKE
-   - 1–2 sentences.
-   - Summarise overall HF conditions.
-   - Mention the key drivers (e.g., high MUF, quiet geomagnetic field, low SFI, rising Kp).
-   - Keep it sharp and actionable.
-
-2. TREND INSIGHTS
-   - Provide 3–5 bullet points.
-   - Comment on:
-     • SFI trend (strong, moderate, weak)
-     • Kp stability (quiet, unsettled, rising, storm risk)
-     • MUF behaviour (opening, falling, stable)
-     • Any notable forecast patterns in the next 24h
-   - Use operator language, not generic AI phrasing.
-
-3. BAND NOTES
-   - For each band provided (e.g., 80m, 40m, 20m, 15m, 10m):
-     • Mention expected performance (local NVIS, regional, DX)
-     • Reference SNR, absorption, and DX probability
-     • Keep each note to 1–2 sentences
-   - If a band is poor, explain why (e.g., low MUF, high absorption).
-
-4. OPERATOR ADVICE
-   - Provide practical guidance:
-     • Best bands to try now
-     • Expected DX windows
-     • Whether conditions favour low, mid, or high bands
-     • Any cautions (e.g., rising Kp may degrade higher bands)
-   - Keep it concise and useful.
-
-5. TIMESTAMP
-   - Set "generatedAt" to the current time in HH:MM format (local UK time).
-
-Do NOT include any text outside the JSON object.
+Rules:
+- DO NOT include commentary outside the JSON.
+- DO NOT include markdown fences.
+- "generatedAt" must be the current time in ISO format.
+- "forecast24h" must contain exactly 24 entries.
+- MUF must follow a realistic diurnal curve.
+- DX probability must reflect MUF, SNR, absorption, and band characteristics.
 `;
 
   // ---------------------------------------------------------
-  // Call DeepSeek / OpenAI-compatible API
+  // Choose provider (default = groq)
   // ---------------------------------------------------------
-  let aiResponse;
+  const provider = process.env.DEFAULT_AI_PROVIDER || "groq";
+  const cfg = getProviderConfig(provider);
 
-  try {
-    const completion = await client.chat.completions.create({
-      model: "deepseek-chat",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: JSON.stringify(payload) },
-      ],
-      temperature: 0.4,
-    });
-
-    aiResponse = completion.choices[0].message.content;
-  } catch (err) {
-    console.error("AI error:", err);
+  if (!cfg.key) {
+    console.error(`Missing API key for provider: ${provider}`);
     return NextResponse.json({
-      quickTake: "AI commentary unavailable.",
+      quickTake: "AI provider unavailable.",
       trendInsights: [],
       bandNotes: {},
       advice: "No operator advice available.",
+      alerts: deterministicAlerts,
+      forecast24h: [],
       generatedAt: new Date().toISOString(),
     });
   }
 
   // ---------------------------------------------------------
-  // Parse JSON safely
+  // Call AI provider with timeout
   // ---------------------------------------------------------
-  let parsed;
+  let aiResponse: string;
 
   try {
-    const cleaned = aiResponse
-  .replace(/^```json/, "")
-  .replace(/^```/, "")
-  .replace(/```$/, "")
-  .trim();
+    const res = await withTimeout(
+      fetch(cfg.url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${cfg.key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: cfg.model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: JSON.stringify(payload) },
+          ],
+          temperature: 0.4,
+        }),
+      }),
+      8000
+    );
 
-parsed = JSON.parse(cleaned);;
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Upstream ${provider} error: ${errText}`);
+    }
+
+    const data = await res.json();
+    aiResponse = data.choices?.[0]?.message?.content || "";
+  } catch (err) {
+    console.error("AI timeout or error:", err);
+    return NextResponse.json({
+      quickTake: "AI commentary unavailable.",
+      trendInsights: [],
+      bandNotes: {},
+      advice: "No operator advice available.",
+      alerts: deterministicAlerts,
+      forecast24h: [],
+      generatedAt: new Date().toISOString(),
+    });
+  }
+
+  // ---------------------------------------------------------
+  // Extract and parse JSON
+  // ---------------------------------------------------------
+  let parsed: any;
+
+  try {
+    const jsonString = extractJson(aiResponse);
+    parsed = JSON.parse(jsonString);
   } catch (err) {
     console.error("JSON parse error:", err);
     parsed = {
@@ -160,9 +229,46 @@ parsed = JSON.parse(cleaned);;
       trendInsights: [],
       bandNotes: {},
       advice: "No operator advice available.",
+      alerts: [],
+      forecast24h: [],
       generatedAt: new Date().toISOString(),
     };
   }
 
-  return NextResponse.json(parsed);
+  // ---------------------------------------------------------
+  // Merge deterministic + AI alerts
+  // ---------------------------------------------------------
+  const aiAlerts = Array.isArray(parsed.alerts) ? parsed.alerts : [];
+  const mergedAlerts = [...deterministicAlerts, ...aiAlerts];
+
+  const now = new Date();
+  const validAlerts = mergedAlerts.filter((alert) => {
+    if (!alert?.issued) return true;
+    const issued = new Date(alert.issued);
+    if (isNaN(issued.getTime())) return true;
+    const ageHours = (now.getTime() - issued.getTime()) / 1000 / 3600;
+    return ageHours < 24;
+  });
+
+  // ---------------------------------------------------------
+  // Forecast validation
+  // ---------------------------------------------------------
+  const forecast24h =
+    Array.isArray(parsed.forecast24h) &&
+    parsed.forecast24h.length === 24
+      ? parsed.forecast24h
+      : [];
+
+  // ---------------------------------------------------------
+  // Final return
+  // ---------------------------------------------------------
+  return NextResponse.json({
+    quickTake: parsed.quickTake,
+    trendInsights: parsed.trendInsights,
+    bandNotes: parsed.bandNotes,
+    advice: parsed.advice,
+    alerts: validAlerts,
+    forecast24h,
+    generatedAt: parsed.generatedAt || new Date().toISOString(),
+  });
 }
