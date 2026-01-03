@@ -33,23 +33,57 @@ function extractJson(text: string): string {
 }
 
 // ---------------------------------------------------------
-// Provider selection
+// Provider configs
 // ---------------------------------------------------------
-function getProviderConfig(provider: string) {
-  if (provider === "deepseek") {
-    return {
-      url: "https://api.deepseek.com/v1/chat/completions",
-      model: "deepseek-chat",
-      key: process.env.DEEPSEEK_API_KEY,
-    };
-  }
-
-  // Default = Groq
-  return {
+const PROVIDERS = {
+  groq: {
     url: "https://api.groq.com/openai/v1/chat/completions",
     model: "llama-3.3-70b-versatile",
     key: process.env.GROQ_API_KEY,
-  };
+  },
+  deepseek: {
+    url: "https://api.deepseek.com/v1/chat/completions",
+    model: "deepseek-chat",
+    key: process.env.DEEPSEEK_API_KEY,
+  },
+};
+
+// ---------------------------------------------------------
+// Try a provider
+// ---------------------------------------------------------
+async function tryProvider(providerName, systemPrompt, payload) {
+  const cfg = PROVIDERS[providerName];
+
+  if (!cfg.key) {
+    throw new Error(`Missing API key for provider: ${providerName}`);
+  }
+
+  const res = await withTimeout(
+    fetch(cfg.url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${cfg.key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: cfg.model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: JSON.stringify(payload) },
+        ],
+        temperature: 0.4,
+      }),
+    }),
+    8000
+  );
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Upstream ${providerName} error: ${errText}`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || "";
 }
 
 // ---------------------------------------------------------
@@ -61,7 +95,7 @@ export async function GET() {
   let current: any = null;
 
   // ---------------------------------------------------------
-  // Fetch live propagation data
+  // Fetch deterministic current data
   // ---------------------------------------------------------
   try {
     const res = await fetch(`${origin}/api/current`, {
@@ -87,12 +121,12 @@ export async function GET() {
   }
 
   // ---------------------------------------------------------
-  // Deterministic Alerts (Hybrid System Part 1)
+  // Deterministic Alerts
   // ---------------------------------------------------------
   const deterministicAlerts = generateDeterministicAlerts(current);
 
   // ---------------------------------------------------------
-  // Build payload for the AI
+  // AI payload (NO AI DX!)
   // ---------------------------------------------------------
   const payload = {
     sfi: current.sfiEstimated,
@@ -100,7 +134,7 @@ export async function GET() {
     muf: current.muf,
     bands: current.bands,
     score: current.score,
-    forecast24h: current.forecast24h ?? [],
+    forecast24h: current.forecast24h, // deterministic
   };
 
   // ---------------------------------------------------------
@@ -125,19 +159,7 @@ Return ONLY a JSON object with the following structure:
       "issued": string
     }
   ],
-  "forecast24h": [
-    {
-      "timeLabel": string,
-      "muf": number,
-      "bands": {
-        "80m": { "snr": number, "absorption": number, "dx": number },
-        "40m": { "snr": number, "absorption": number, "dx": number },
-        "20m": { "snr": number, "absorption": number, "dx": number },
-        "15m": { "snr": number, "absorption": number, "dx": number },
-        "10m": { "snr": number, "absorption": number, "dx": number }
-      }
-    }
-  ],
+  "forecast24h": [],
   "generatedAt": string
 }
 
@@ -145,83 +167,43 @@ Rules:
 - DO NOT include commentary outside the JSON.
 - DO NOT include markdown fences.
 - "generatedAt" must be the current time in ISO format.
-- "forecast24h" must contain exactly 24 entries.
-- MUF must follow a realistic diurnal curve.
-- DX probability must reflect MUF, SNR, absorption, and band characteristics.
+- DO NOT generate DX/SNR/absorption or MUF. These are deterministic.
+- "forecast24h" must be returned as an empty array (we will fill it deterministically).
 `;
 
   // ---------------------------------------------------------
-  // Choose provider (default = groq)
+  // AI CALL WITH FALLBACK
   // ---------------------------------------------------------
-  const provider = process.env.DEFAULT_AI_PROVIDER || "groq";
-  const cfg = getProviderConfig(provider);
+  let aiResponse: string | null = null;
 
-  if (!cfg.key) {
-    console.error(`Missing API key for provider: ${provider}`);
-    return NextResponse.json({
-      quickTake: "AI provider unavailable.",
-      trendInsights: [],
-      bandNotes: {},
-      advice: "No operator advice available.",
-      alerts: deterministicAlerts,
-      forecast24h: [],
-      generatedAt: new Date().toISOString(),
-    });
+  for (const provider of ["groq", "deepseek"]) {
+    try {
+      aiResponse = await tryProvider(provider, systemPrompt, payload);
+      break;
+    } catch (err) {
+      console.error(`Provider ${provider} failed:`, err);
+    }
   }
 
-  // ---------------------------------------------------------
-  // Call AI provider with timeout
-  // ---------------------------------------------------------
-  let aiResponse: string;
-
-  try {
-    const res = await withTimeout(
-      fetch(cfg.url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${cfg.key}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: cfg.model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: JSON.stringify(payload) },
-          ],
-          temperature: 0.4,
-        }),
-      }),
-      8000
-    );
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Upstream ${provider} error: ${errText}`);
-    }
-
-    const data = await res.json();
-    aiResponse = data.choices?.[0]?.message?.content || "";
-  } catch (err) {
-    console.error("AI timeout or error:", err);
+  if (!aiResponse) {
     return NextResponse.json({
       quickTake: "AI commentary unavailable.",
       trendInsights: [],
       bandNotes: {},
       advice: "No operator advice available.",
       alerts: deterministicAlerts,
-      forecast24h: [],
+      forecast24h: current.forecast24h,
       generatedAt: new Date().toISOString(),
     });
   }
 
   // ---------------------------------------------------------
-  // Extract and parse JSON
+  // Extract JSON
   // ---------------------------------------------------------
   let parsed: any;
 
   try {
-    const jsonString = extractJson(aiResponse);
-    parsed = JSON.parse(jsonString);
+    parsed = JSON.parse(extractJson(aiResponse));
   } catch (err) {
     console.error("JSON parse error:", err);
     parsed = {
@@ -251,16 +233,7 @@ Rules:
   });
 
   // ---------------------------------------------------------
-  // Forecast validation
-  // ---------------------------------------------------------
-  const forecast24h =
-    Array.isArray(parsed.forecast24h) &&
-    parsed.forecast24h.length === 24
-      ? parsed.forecast24h
-      : [];
-
-  // ---------------------------------------------------------
-  // Final return
+  // Final return (deterministic forecast)
   // ---------------------------------------------------------
   return NextResponse.json({
     quickTake: parsed.quickTake,
@@ -268,7 +241,7 @@ Rules:
     bandNotes: parsed.bandNotes,
     advice: parsed.advice,
     alerts: validAlerts,
-    forecast24h,
+    forecast24h: current.forecast24h, // deterministic
     generatedAt: parsed.generatedAt || new Date().toISOString(),
   });
 }

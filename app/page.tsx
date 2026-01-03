@@ -17,6 +17,7 @@ import ForecastPanelV2 from "./components/ForecastPanelV2";
 import DXHeatmap from "./components/DXHeatmap";
 import DXOutlook from "./components/DXOutlook";
 import BestBandNow from "./components/BestBandNow";
+import DXPathsPanel from "./components/DXPathsPanel";
 import { useSummaryData } from "./hooks/useSummaryData";
 
 export default function Home() {
@@ -121,6 +122,7 @@ export default function Home() {
           <ForecastPanelV2 />
           <DXOutlook />
           <DXHeatmap />
+          <DXPathsPanel />
 
           {/* 📡 Band Table */}
           <BandTable bands={bandRows} />

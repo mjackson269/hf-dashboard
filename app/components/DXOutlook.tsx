@@ -28,7 +28,7 @@ export default function DXOutlook() {
   let bestDX = { time: "", band: "", dx: -1 };
   forecast.forEach((step: any) => {
     for (const band of bands) {
-      const dx = step.dxProbability[band];
+      const dx = step.bands[band].dx;
       if (dx > bestDX.dx) {
         bestDX = { time: step.timeLabel, band, dx };
       }
@@ -45,7 +45,7 @@ export default function DXOutlook() {
   };
 
   bands.forEach((band) => {
-    const values = forecast.map((f: any) => f.dxProbability[band]);
+    const values = forecast.map((f: any) => f.bands[band].dx);
 
     const avg =
       values.reduce((a: number, b: number): number => a + b, 0) /
@@ -85,11 +85,15 @@ export default function DXOutlook() {
   }
 
   if (bandSummary["15m"].max >= 60) {
-    lines.push(`15m shows good DX potential during the late morning and early afternoon.`);
+    lines.push(
+      `15m shows good DX potential during the late morning and early afternoon.`
+    );
   }
 
   if (bandSummary["20m"].max >= 70) {
-    lines.push(`20m is the most reliable daytime DX band with consistently strong signals.`);
+    lines.push(
+      `20m is the most reliable daytime DX band with consistently strong signals.`
+    );
   }
 
   // Low-band behaviour
