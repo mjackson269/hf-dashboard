@@ -1,8 +1,10 @@
 "use client";
 
+console.log("FORECAST STEP 0:", data?.forecast24h?.[0]);
+
 import React from "react";
 
-// Region → band mapping
+// Mapping regions to representative bands (simplified MUF logic)
 const regionBandMap: Record<string, string[]> = {
   Europe: ["40m", "30m", "20m"],
   NorthAmerica: ["20m", "17m", "15m"],
@@ -11,23 +13,9 @@ const regionBandMap: Record<string, string[]> = {
   Asia: ["20m", "15m", "10m"]
 };
 
-// Helper to clamp and normalize scores
-function pct(value: number | undefined) {
-  if (value === undefined || value === null) return 0;
-  return Math.round(Math.min(value, 1) * 100);
-}
-
 export default function DXPathsPanel({ data }: { data: any }) {
-  const forecastStep = data?.forecast24h?.[0];
-  const bands = forecastStep?.bands;
-
-  if (!bands || typeof bands !== "object") {
-    return (
-      <div className="bg-gray-900 text-white p-4 rounded-lg shadow-md">
-        <p>No DX path data available</p>
-      </div>
-    );
-  }
+  const bands = data?.forecast24h?.[0]?.bands;
+  if (!bands) return null;
 
   const regions = Object.keys(regionBandMap);
 
@@ -40,14 +28,14 @@ export default function DXPathsPanel({ data }: { data: any }) {
           const candidateBands = regionBandMap[region];
           let bestBand = null;
           let bestScore = 0;
-          let bandData: any = null;
+          let bandData = null;
 
           for (const band of candidateBands) {
-            const info = bands[band];
-            if (info?.dx > bestScore) {
-              bestScore = info.dx;
+            const data = bands[band];
+            if (data?.dx > bestScore) {
+              bestScore = data.dx;
               bestBand = band;
-              bandData = info;
+              bandData = data;
             }
           }
 
@@ -62,21 +50,22 @@ export default function DXPathsPanel({ data }: { data: any }) {
             >
               <h3 className="text-lg font-semibold">🌍 {region}</h3>
 
-              <p className="mt-1">{isOpen ? "🟢 Open" : "🔴 Closed"}</p>
-
               <p className="mt-1">
-                🚀 Best Band: {bestBand} ({pct(bestScore)}% DX)
+                {isOpen ? "🟢 Open" : "🔴 Closed"}
               </p>
 
               <p className="mt-1">
-                SNR {bandData.snr?.toFixed(1)} dB · Absorption{" "}
-                {bandData.absorption?.toFixed(1)} dB
+                🚀 Best Band: {bestBand} ({Math.round(bestScore * 100)}% DX)
+              </p>
+
+              <p className="mt-1">
+                SNR {bandData.snr?.toFixed(1)} dB · Absorption {bandData.absorption?.toFixed(1)} dB
               </p>
 
               <div className="mt-2 text-xs opacity-80">
-                <p>Deterministic: {pct(bandData.dxDeterministic)}%</p>
-                <p>WSPR: {pct(bandData.dxWspr)}%</p>
-                <p>FT8: {pct(bandData.dxFt8)}%</p>
+                <p>Deterministic: {Math.round(bandData.dxDeterministic * 100)}%</p>
+                <p>WSPR: {Math.round(bandData.dxWspr * 100)}%</p>
+                <p>FT8: {Math.round(bandData.dxFt8 * 100)}%</p>
               </div>
             </div>
           );

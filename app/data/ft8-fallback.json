@@ -1,0 +1,159 @@
+{
+  "receptionReports": [
+    {
+      "mode": "FT8",
+      "frequency": 1838000,
+      "snr": -18,
+      "distance": 450,
+      "flowStartSeconds": 1735940000
+    },
+    {
+      "mode": "FT8",
+      "frequency": 1838000,
+      "snr": -22,
+      "distance": 600,
+      "flowStartSeconds": 1735940060
+    },
+
+    {
+      "mode": "FT8",
+      "frequency": 3502000,
+      "snr": -12,
+      "distance": 900,
+      "flowStartSeconds": 1735940200
+    },
+    {
+      "mode": "FT8",
+      "frequency": 3502000,
+      "snr": -15,
+      "distance": 1200,
+      "flowStartSeconds": 1735940260
+    },
+
+    {
+      "mode": "FT8",
+      "frequency": 7074000,
+      "snr": -5,
+      "distance": 1800,
+      "flowStartSeconds": 1735940400
+    },
+    {
+      "mode": "FT8",
+      "frequency": 7074000,
+      "snr": -8,
+      "distance": 2200,
+      "flowStartSeconds": 1735940460
+    },
+    {
+      "mode": "FT8",
+      "frequency": 7074000,
+      "snr": -10,
+      "distance": 2600,
+      "flowStartSeconds": 1735940520
+    },
+
+    {
+      "mode": "FT8",
+      "frequency": 10136000,
+      "snr": -15,
+      "distance": 3500,
+      "flowStartSeconds": 1735940700
+    },
+    {
+      "mode": "FT8",
+      "frequency": 10136000,
+      "snr": -12,
+      "distance": 4200,
+      "flowStartSeconds": 1735940760
+    },
+
+    {
+      "mode": "FT8",
+      "frequency": 14074000,
+      "snr": -10,
+      "distance": 6500,
+      "flowStartSeconds": 1735941000
+    },
+    {
+      "mode": "FT8",
+      "frequency": 14074000,
+      "snr": -15,
+      "distance": 7200,
+      "flowStartSeconds": 1735941060
+    },
+    {
+      "mode": "FT8",
+      "frequency": 14074000,
+      "snr": -18,
+      "distance": 8200,
+      "flowStartSeconds": 1735941120
+    },
+
+    {
+      "mode": "FT8",
+      "frequency": 18106000,
+      "snr": -12,
+      "distance": 7000,
+      "flowStartSeconds": 1735941300
+    },
+    {
+      "mode": "FT8",
+      "frequency": 18106000,
+      "snr": -18,
+      "distance": 8500,
+      "flowStartSeconds": 1735941360
+    },
+
+    {
+      "mode": "FT8",
+      "frequency": 21074000,
+      "snr": -15,
+      "distance": 9000,
+      "flowStartSeconds": 1735941600
+    },
+    {
+      "mode": "FT8",
+      "frequency": 21074000,
+      "snr": -18,
+      "distance": 10500,
+      "flowStartSeconds": 1735941660
+    },
+
+    {
+      "mode": "FT8",
+      "frequency": 24915000,
+      "snr": -20,
+      "distance": 11000,
+      "flowStartSeconds": 1735941900
+    },
+    {
+      "mode": "FT8",
+      "frequency": 24915000,
+      "snr": -18,
+      "distance": 12500,
+      "flowStartSeconds": 1735941960
+    },
+
+    {
+      "mode": "FT8",
+      "frequency": 28074000,
+      "snr": -22,
+      "distance": 13000,
+      "flowStartSeconds": 1735942200
+    },
+    {
+      "mode": "FT8",
+      "frequency": 28074000,
+      "snr": -20,
+      "distance": 14500,
+      "flowStartSeconds": 1735942260
+    },
+    {
+      "mode": "FT8",
+      "frequency": 28074000,
+      "snr": -18,
+      "distance": 16000,
+      "flowStartSeconds": 1735942320
+    }
+  ]
+}

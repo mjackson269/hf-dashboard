@@ -1,0 +1,39 @@
+[
+  { "timestamp": 1735940000, "freq": 1838000, "snr": -22, "drift": 0, "tx_call": "G4ABC", "tx_grid": "IO93", "rx_grid": "IO91", "distance": 180 },
+  { "timestamp": 1735940060, "freq": 1838000, "snr": -18, "drift": 0, "tx_call": "G0TEST", "tx_grid": "IO93", "rx_grid": "IO92", "distance": 220 },
+
+  { "timestamp": 1735940200, "freq": 3502000, "snr": -15, "drift": 0, "tx_call": "G4XYZ", "tx_grid": "IO93", "rx_grid": "IO91", "distance": 250 },
+  { "timestamp": 1735940260, "freq": 3502000, "snr": -12, "drift": 0, "tx_call": "G4ABC", "tx_grid": "IO93", "rx_grid": "IO92", "distance": 310 },
+  { "timestamp": 1735940320, "freq": 3502000, "snr": -10, "drift": 0, "tx_call": "G0TEST", "tx_grid": "IO93", "rx_grid": "IO94", "distance": 420 },
+
+  { "timestamp": 1735940400, "freq": 7074000, "snr": -8, "drift": 0, "tx_call": "G4ABC", "tx_grid": "IO93", "rx_grid": "IO91", "distance": 350 },
+  { "timestamp": 1735940460, "freq": 7074000, "snr": -5, "drift": 0, "tx_call": "G4XYZ", "tx_grid": "IO93", "rx_grid": "IO92", "distance": 420 },
+  { "timestamp": 1735940520, "freq": 7074000, "snr": -2, "drift": 0, "tx_call": "G0TEST", "tx_grid": "IO93", "rx_grid": "IO94", "distance": 520 },
+  { "timestamp": 1735940580, "freq": 7074000, "snr": -1, "drift": 0, "tx_call": "G4ABC", "tx_grid": "IO93", "rx_grid": "IO95", "distance": 610 },
+
+  { "timestamp": 1735940700, "freq": 10136000, "snr": -18, "drift": 0, "tx_call": "G4XYZ", "tx_grid": "IO93", "rx_grid": "IO91", "distance": 900 },
+  { "timestamp": 1735940760, "freq": 10136000, "snr": -15, "drift": 0, "tx_call": "G4ABC", "tx_grid": "IO93", "rx_grid": "IO92", "distance": 1100 },
+  { "timestamp": 1735940820, "freq": 10136000, "snr": -12, "drift": 0, "tx_call": "G0TEST", "tx_grid": "IO93", "rx_grid": "IO94", "distance": 1300 },
+
+  { "timestamp": 1735941000, "freq": 14097000, "snr": -20, "drift": 0, "tx_call": "G4ABC", "tx_grid": "IO93", "rx_grid": "IO91", "distance": 1800 },
+  { "timestamp": 1735941060, "freq": 14097000, "snr": -18, "drift": 0, "tx_call": "G4XYZ", "tx_grid": "IO93", "rx_grid": "IO92", "distance": 2200 },
+  { "timestamp": 1735941120, "freq": 14097000, "snr": -15, "drift": 0, "tx_call": "G0TEST", "tx_grid": "IO93", "rx_grid": "IO94", "distance": 2600 },
+  { "timestamp": 1735941180, "freq": 14097000, "snr": -12, "drift": 0, "tx_call": "G4ABC", "tx_grid": "IO93", "rx_grid": "IO95", "distance": 3100 },
+
+  { "timestamp": 1735941300, "freq": 18106000, "snr": -22, "drift": 0, "tx_call": "G4XYZ", "tx_grid": "IO93", "rx_grid": "IO91", "distance": 2500 },
+  { "timestamp": 1735941360, "freq": 18106000, "snr": -18, "drift": 0, "tx_call": "G4ABC", "tx_grid": "IO93", "rx_grid": "IO92", "distance": 3000 },
+  { "timestamp": 1735941420, "freq": 18106000, "snr": -15, "drift": 0, "tx_call": "G0TEST", "tx_grid": "IO93", "rx_grid": "IO94", "distance": 3500 },
+
+  { "timestamp": 1735941600, "freq": 21074000, "snr": -18, "drift": 0, "tx_call": "G4ABC", "tx_grid": "IO93", "rx_grid": "IO91", "distance": 4200 },
+  { "timestamp": 1735941660, "freq": 21074000, "snr": -15, "drift": 0, "tx_call": "G4XYZ", "tx_grid": "IO93", "rx_grid": "IO92", "distance": 4800 },
+  { "timestamp": 1735941720, "freq": 21074000, "snr": -12, "drift": 0, "tx_call": "G0TEST", "tx_grid": "IO93", "rx_grid": "IO94", "distance": 5200 },
+
+  { "timestamp": 1735941900, "freq": 24915000, "snr": -20, "drift": 0, "tx_call": "G4ABC", "tx_grid": "IO93", "rx_grid": "IO91", "distance": 5000 },
+  { "timestamp": 1735941960, "freq": 24915000, "snr": -18, "drift": 0, "tx_call": "G4XYZ", "tx_grid": "IO93", "rx_grid": "IO92", "distance": 5600 },
+  { "timestamp": 1735942020, "freq": 24915000, "snr": -15, "drift": 0, "tx_call": "G0TEST", "tx_grid": "IO93", "rx_grid": "IO94", "distance": 6200 },
+
+  { "timestamp": 1735942200, "freq": 28074000, "snr": -22, "drift": 0, "tx_call": "G4ABC", "tx_grid": "IO93", "rx_grid": "IO91", "distance": 5500 },
+  { "timestamp": 1735942260, "freq": 28074000, "snr": -20, "drift": 0, "tx_call": "G4XYZ", "tx_grid": "IO93", "rx_grid": "IO92", "distance": 6200 },
+  { "timestamp": 1735942320, "freq": 28074000, "snr": -18, "drift": 0, "tx_call": "G0TEST", "tx_grid": "IO93", "rx_grid": "IO94", "distance": 6800 },
+  { "timestamp": 1735942380, "freq": 28074000, "snr": -15, "drift": 0, "tx_call": "G4ABC", "tx_grid": "IO93", "rx_grid": "IO95", "distance": 7200 }
+]

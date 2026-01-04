@@ -122,7 +122,7 @@ export default function Home() {
           <ForecastPanelV2 />
           <DXOutlook />
           <DXHeatmap />
-          <DXPathsPanel />
+          <DXPathsPanel data={data} />
 
           {/* 📡 Band Table */}
           <BandTable bands={bandRows} />
