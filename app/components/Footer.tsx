@@ -1,24 +1,19 @@
-"use client";
-
 import { subtleText } from "../lib/designSystem";
+import ClientClock from "@/app/components/ClientClock";
 
 export default function Footer() {
-  const version = "v0.9.0"; // Update manually when releasing new versions
-  const timestamp = new Date().toLocaleString("en-GB", {
-    hour12: false,
-  });
+  const version = "v0.9.0";
 
   return (
     <footer className="mt-10 pt-6 border-t border-neutral-800 text-center">
       <p className={subtleText}>
-        HF Dashboard {version} • Last updated: {timestamp}
+        HF Dashboard {version} • Last updated: <ClientClock />
       </p>
 
       <p className={`${subtleText} mt-1`}>
         Built for HF operators — powered by live solar & ionospheric data
       </p>
 
-      {/* Optional GitHub link */}
       <a
         href="https://github.com/YOUR_USERNAME/YOUR_REPO"
         target="_blank"

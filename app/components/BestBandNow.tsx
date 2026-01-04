@@ -1,52 +1,46 @@
 "use client";
 
-import { useSummaryData } from "../hooks/useSummaryData";
 import { card, panelTitle } from "../lib/designSystem";
+import { useSummaryData } from "../hooks/useSummaryData";
 
 export default function BestBandNow() {
   const { data, isLoading } = useSummaryData();
-  const bands = data?.current?.bands;
 
-  if (isLoading || !bands) {
-    return <div className={card}>Calculating best band…</div>;
-  }
+  if (isLoading) return <div className={card}>Evaluating best band…</div>;
+  if (!data || !data.bands) return <div className={card}>No band data.</div>;
 
-  const best = Object.entries(bands)
-    .sort((a, b) => b[1].dx - a[1].dx)[0];
+  const entries = Object.entries(data.bands) as [string, any][];
+  const best = entries.sort((a, b) => b[1].dx - a[1].dx)[0];
 
-  const bestBand = best?.[0];
-  const bestData = best?.[1];
+  if (!best) return <div className={card}>No band data.</div>;
 
-  // Generate a short operator-grade summary
-  function getBandSummary(band: string, data: any) {
-    if (!data) return "";
+  const [band, vals] = best;
+  const reasons: string[] = [];
 
-    const { snr, absorption, dx } = data;
+  if (vals.dx >= 70) reasons.push("strong DX probability");
+  else if (vals.dx >= 40) reasons.push("moderate DX probability");
+  else reasons.push("limited DX probability");
 
-    const reasons = [];
-    if (snr >= 20) reasons.push("high SNR");
-    if (absorption <= 1) reasons.push("low absorption");
-    if (dx >= 70) reasons.push("strong DX probability");
+  if (vals.snr >= 30) reasons.push("high SNR");
+  else if (vals.snr >= 20) reasons.push("usable SNR");
+  else reasons.push("weak SNR");
 
-    const reasonText =
-      reasons.length > 0 ? reasons.join(" and ") : "favourable conditions";
-
-    return `${band} is performing best right now due to ${reasonText}.`;
-  }
+  if (vals.absorption <= 2) reasons.push("low absorption");
+  else if (vals.absorption <= 4) reasons.push("moderate absorption");
+  else reasons.push("high absorption");
 
   return (
     <div className={card}>
-      <h2 className={panelTitle}>Best Band Right Now</h2>
-
-      <div className="mt-3 text-lg font-bold text-emerald-400">
-        {best ? `${bestBand} (${bestData.dx}%)` : "No data"}
-      </div>
-
-      {best && (
-        <div className="mt-2 text-sm text-slate-400">
-          {getBandSummary(bestBand, bestData)}
-        </div>
-      )}
+      <h2 className={panelTitle}>Best Band Now</h2>
+      <p className="mt-2 text-lg font-semibold text-white">
+        {band} — {vals.dx}% DX probability
+      </p>
+      <p className="mt-1 text-neutral-300">
+        SNR {vals.snr} dB · Absorption {vals.absorption} dB
+      </p>
+      <p className="mt-2 text-neutral-300">
+        {reasons.join(", ")}.
+      </p>
     </div>
   );
 }
