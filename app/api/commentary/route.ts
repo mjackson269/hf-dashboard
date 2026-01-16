@@ -51,8 +51,10 @@ const PROVIDERS = {
 // ---------------------------------------------------------
 // Try a provider (FIXED TYPES)
 // ---------------------------------------------------------
+type ProviderName = keyof typeof PROVIDERS;
+
 async function tryProvider(
-  providerName: string,
+  providerName: ProviderName,
   systemPrompt: string,
   payload: any
 ) {
@@ -89,7 +91,6 @@ async function tryProvider(
   const data = await res.json();
   return data.choices?.[0]?.message?.content || "";
 }
-
 // ---------------------------------------------------------
 // MAIN ROUTE
 // ---------------------------------------------------------
