@@ -49,9 +49,13 @@ const PROVIDERS = {
 };
 
 // ---------------------------------------------------------
-// Try a provider
+// Try a provider (FIXED TYPES)
 // ---------------------------------------------------------
-async function tryProvider(providerName, systemPrompt, payload) {
+async function tryProvider(
+  providerName: string,
+  systemPrompt: string,
+  payload: any
+) {
   const cfg = PROVIDERS[providerName];
 
   if (!cfg.key) {
@@ -241,7 +245,7 @@ Rules:
     bandNotes: parsed.bandNotes,
     advice: parsed.advice,
     alerts: validAlerts,
-    forecast24h: current.forecast24h, // deterministic
+    forecast24h: current.forecast24h,
     generatedAt: parsed.generatedAt || new Date().toISOString(),
   });
 }
