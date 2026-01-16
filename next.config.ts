@@ -1,20 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // React Compiler is top-level in Next.js 16
-  reactCompiler: false,
-
   // Explicitly disable Turbopack and use Webpack
   turbopack: false,
 
-  // Ensure a single React runtime across server + client
+  // No webpack aliasing — let Next.js handle React resolution
   webpack: (config) => {
-    config.resolve.alias = {
-      ...(config.resolve.alias || {}),
-      react: require.resolve("react"),
-      "react-dom": require.resolve("react-dom")
-    };
     return config;
-  }
+  },
+
+  // Disable React Compiler (optional)
+  reactCompiler: false,
 };
 
 module.exports = nextConfig;
