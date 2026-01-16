@@ -1,21 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Disable Turbopack for production — Webpack is stable with React 18
-  experimental: {
-    turbo: false,
-    reactCompiler: false,
-    serverActions: false
-  },
+  // React Compiler is now a top-level key, not inside experimental
+  reactCompiler: false,
 
-  // Ensure React is resolved consistently across all bundles
+  // Webpack alias to ensure a single React runtime
   webpack: (config) => {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
       react: require.resolve("react"),
-      "react-dom": require.resolve("react-dom")
+      "react-dom": require.resolve("react-dom"),
     };
     return config;
-  }
+  },
 };
 
 module.exports = nextConfig;

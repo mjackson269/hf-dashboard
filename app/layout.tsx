@@ -5,7 +5,11 @@ export const metadata = {
   description: "Live HF propagation conditions",
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body className="antialiased">{children}</body>
