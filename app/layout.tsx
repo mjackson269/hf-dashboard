@@ -1,17 +1,14 @@
 import "./globals.css";
-import ClientWrapper from "./ClientWrapper";
 
 export const metadata = {
   title: "HF Dashboard",
   description: "Live HF propagation conditions",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="antialiased">
-        <ClientWrapper>{children}</ClientWrapper>
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

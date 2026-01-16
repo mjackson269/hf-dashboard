@@ -1,13 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Disable Turbopack for production — prevents duplicate React runtimes
+  // Force Webpack instead of Turbopack
   experimental: {
     turbo: false,
-    reactCompiler: false,
-    serverActions: false,
   },
 
-  // Ensure React is resolved consistently across server/client bundles
+  // Ensure React is resolved consistently
   webpack: (config) => {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
@@ -16,9 +14,6 @@ const nextConfig = {
     };
     return config;
   },
-
-  // No transpilePackages needed for your project
-  transpilePackages: [],
 };
 
 module.exports = nextConfig;
