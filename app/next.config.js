@@ -1,17 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Disable Turbopack for production — prevents duplicate React runtimes
   experimental: {
-    // Prevent Turbopack from splitting React into multiple runtimes
-    turbo: {
-      resolveAlias: {
-        react: require.resolve("react"),
-        "react-dom": require.resolve("react-dom"),
-      },
-    },
-
-    // Disable features that can cause hydration/runtime mismatches
+    turbo: false,
     reactCompiler: false,
     serverActions: false,
+  },
+
+  // Ensure React is resolved consistently across server/client bundles
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      react: require.resolve("react"),
+      "react-dom": require.resolve("react-dom"),
+    };
+    return config;
   },
 
   // No transpilePackages needed for your project
