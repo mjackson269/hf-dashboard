@@ -36,9 +36,11 @@ export default function SummaryPanel() {
               Trend Insights
             </h3>
             <ul className="list-disc ml-5 mt-1 text-neutral-400 text-sm">
-              {commentary.trendInsights.map((insight, idx) => (
-                <li key={idx}>{insight}</li>
-              ))}
+              {commentary.trendInsights.map(
+                (insight: string, idx: number) => (
+                  <li key={idx}>{insight}</li>
+                )
+              )}
             </ul>
           </div>
         )}
@@ -80,7 +82,7 @@ export default function SummaryPanel() {
               Alerts
             </h3>
             <ul className="list-disc ml-5 mt-1 text-neutral-400 text-sm">
-              {commentary.alerts.map((alert, idx) => (
+              {commentary.alerts.map((alert: any, idx: number) => (
                 <li key={idx}>
                   <strong>{alert.type}:</strong> {alert.description} (
                   {alert.severity})
