@@ -4,12 +4,10 @@ import { useSummaryData } from "../hooks/useSummaryData";
 import SeverityBadge from "./SeverityBadge";
 
 export default function QuickTake() {
-  const { data, isLoading, isError } = useSummaryData();
+  const { data, isLoading } = useSummaryData();
 
   if (isLoading || !data) return null;
-  if (isError) return null;
 
-  // HARDENED: ensure hybrid fields exist
   const severity = data.hybridSeverity ?? null;
   const quickTake = data.hybridQuickTake ?? null;
 
