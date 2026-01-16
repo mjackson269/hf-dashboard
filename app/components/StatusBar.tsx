@@ -12,11 +12,12 @@ export default function StatusBar() {
       </div>
     );
 
-  // Use hybrid-scored current hour
+  // Hybrid-scored current hour
   const bands = data?.forecast24h?.[0]?.bands;
   const prevBands = data?.forecast24h?.[1]?.bands;
 
-  if (!bands)
+  // HARDENED GUARD: ensure bands is a non-empty object
+  if (!bands || typeof bands !== "object" || Object.keys(bands).length === 0)
     return (
       <div className="w-full text-xs text-neutral-400 py-1 px-3 border-t border-neutral-800">
         No band data.

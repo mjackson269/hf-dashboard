@@ -9,9 +9,14 @@ function pct(value: number | undefined) {
 
 export default function BestBandNow({ data }: { data: any }) {
   const current = data?.forecast24h?.[0]?.bands;
-  const previous = data?.forecast24h?.[1]?.bands; // for trend comparison
+  const previous = data?.forecast24h?.[1]?.bands;
 
-  if (!current || typeof current !== "object") {
+  // HARDENED GUARD: ensure current is a non-empty object
+  if (
+    !current ||
+    typeof current !== "object" ||
+    Object.keys(current).length === 0
+  ) {
     return (
       <div className="bg-gray-900 text-white p-4 rounded-lg shadow-md">
         <p>No band data available</p>
@@ -45,9 +50,7 @@ export default function BestBandNow({ data }: { data: any }) {
             className="border border-neutral-800 rounded-md p-3"
           >
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">
-                📡 {b.band}
-              </h3>
+              <h3 className="text-lg font-semibold">📡 {b.band}</h3>
               <span className="text-sm opacity-80">{b.trend}</span>
             </div>
 

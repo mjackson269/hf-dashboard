@@ -11,7 +11,9 @@ export default function ForecastPanelV2() {
 
   // Hooks must run unconditionally
   const [advanced, setAdvanced] = useState(false);
-  const forecast = data?.forecast24h ?? [];
+
+  // HARDENED: ensure forecast24h is an array
+  const forecast = Array.isArray(data?.forecast24h) ? data.forecast24h : [];
 
   const bestDX = useMemo(() => {
     if (!forecast.length) return null;
@@ -19,6 +21,8 @@ export default function ForecastPanelV2() {
     let best = { step: null as any, band: "", score: -1 };
 
     forecast.forEach((step: any) => {
+      if (!step || typeof step !== "object") return;
+
       BANDS.forEach((band) => {
         const b = step.bands?.[band];
         if (!b) return;
@@ -67,7 +71,7 @@ export default function ForecastPanelV2() {
         </div>
       )}
 
-      {/* SIMPLE VIEW — RESTORED GRID */}
+      {/* SIMPLE VIEW */}
       {!advanced && (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-xs text-neutral-300">
@@ -83,46 +87,64 @@ export default function ForecastPanelV2() {
               </tr>
             </thead>
             <tbody>
-              {forecast.map((step: any, idx: number) => (
-                <tr key={idx} className="border-b border-neutral-900">
-                  <td className="py-1">{step.timeLabel}</td>
-                  <td className="py-1">{step.muf.toFixed(1)} MHz</td>
-
-                  {BANDS.map((band) => {
-                    const b = step.bands?.[band];
-                    if (!b) return <td key={band}>–</td>;
-
-                    const dx = b.dx;
-                    const dxBarWidth = `${dx}%`;
-                    const dxBarColor =
-                      dx >= 70
-                        ? "bg-emerald-500"
-                        : dx >= 40
-                        ? "bg-amber-500"
-                        : dx >= 20
-                        ? "bg-red-500"
-                        : "bg-neutral-700";
-
-                    return (
-                      <td key={band} className="py-1 w-24">
-                        <div className="h-2 bg-neutral-800 rounded">
-                          <div
-                            className={`h-full ${dxBarColor}`}
-                            style={{ width: dxBarWidth }}
-                          />
-                        </div>
-                        <div className="text-neutral-400 mt-1">{dx}%</div>
+              {forecast.map((step: any, idx: number) => {
+                if (!step || typeof step !== "object")
+                  return (
+                    <tr key={idx}>
+                      <td colSpan={7} className="py-1 text-neutral-500">
+                        –
                       </td>
-                    );
-                  })}
-                </tr>
-              ))}
+                    </tr>
+                  );
+
+                return (
+                  <tr key={idx} className="border-b border-neutral-900">
+                    <td className="py-1">{step.timeLabel ?? "–"}</td>
+                    <td className="py-1">
+                      {step.muf ? `${step.muf.toFixed(1)} MHz` : "–"}
+                    </td>
+
+                    {BANDS.map((band) => {
+                      const b = step.bands?.[band];
+                      if (!b)
+                        return (
+                          <td key={band} className="py-1">
+                            –
+                          </td>
+                        );
+
+                      const dx = b.dx;
+                      const dxBarWidth = `${dx}%`;
+                      const dxBarColor =
+                        dx >= 70
+                          ? "bg-emerald-500"
+                          : dx >= 40
+                          ? "bg-amber-500"
+                          : dx >= 20
+                          ? "bg-red-500"
+                          : "bg-neutral-700";
+
+                      return (
+                        <td key={band} className="py-1 w-24">
+                          <div className="h-2 bg-neutral-800 rounded">
+                            <div
+                              className={`h-full ${dxBarColor}`}
+                              style={{ width: dxBarWidth }}
+                            />
+                          </div>
+                          <div className="text-neutral-400 mt-1">{dx}%</div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
-      {/* ADVANCED VIEW — FULL DETAILS */}
+      {/* ADVANCED VIEW */}
       {advanced && (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-xs text-neutral-300">
@@ -138,23 +160,41 @@ export default function ForecastPanelV2() {
               </tr>
             </thead>
             <tbody>
-              {forecast.map((step: any, idx: number) => (
-                <tr key={idx} className="border-b border-neutral-900">
-                  <td className="py-1">{step.timeLabel}</td>
-                  <td className="py-1">{step.muf.toFixed(1)} MHz</td>
-
-                  {BANDS.map((band) => {
-                    const b = step.bands?.[band];
-                    if (!b) return <td key={band}>–</td>;
-
-                    return (
-                      <td key={band} className="py-1">
-                        DX {b.dx}% · SNR {b.snr} dB · Abs {b.absorption} dB
+              {forecast.map((step: any, idx: number) => {
+                if (!step || typeof step !== "object")
+                  return (
+                    <tr key={idx}>
+                      <td colSpan={7} className="py-1 text-neutral-500">
+                        –
                       </td>
-                    );
-                  })}
-                </tr>
-              ))}
+                    </tr>
+                  );
+
+                return (
+                  <tr key={idx} className="border-b border-neutral-900">
+                    <td className="py-1">{step.timeLabel ?? "–"}</td>
+                    <td className="py-1">
+                      {step.muf ? `${step.muf.toFixed(1)} MHz` : "–"}
+                    </td>
+
+                    {BANDS.map((band) => {
+                      const b = step.bands?.[band];
+                      if (!b)
+                        return (
+                          <td key={band} className="py-1">
+                            –
+                          </td>
+                        );
+
+                      return (
+                        <td key={band} className="py-1">
+                          DX {b.dx}% · SNR {b.snr} dB · Abs {b.absorption} dB
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

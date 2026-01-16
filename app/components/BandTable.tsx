@@ -9,7 +9,16 @@ export default function BandTable() {
   const bands = data?.forecast24h?.[0]?.bands;
 
   if (isLoading) return <div className={card}>Loading band data…</div>;
-  if (!bands || typeof bands !== "object") return <div className={card}>No band data.</div>;
+
+  // HARDENED GUARD
+  if (
+    !bands ||
+    typeof bands !== "object" ||
+    Array.isArray(bands) ||
+    Object.keys(bands).length === 0
+  ) {
+    return <div className={card}>No band data.</div>;
+  }
 
   const entries = Object.entries(bands) as [string, any][];
 
