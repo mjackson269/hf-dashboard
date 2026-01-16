@@ -1,60 +1,53 @@
 "use client";
 
+import React from "react";
 import { card, panelTitle } from "../lib/designSystem";
-import { useSummaryData } from "../hooks/useSummaryData";
 
-export default function BandTable() {
-  const { data, isLoading } = useSummaryData();
+interface BandTableProps {
+  bands: Array<{
+    band: string;
+    snr: number;
+    dx: number;
+    noise: number;
+    status?: string;
+  }>;
+}
 
-  const bands = data?.forecast24h?.[0]?.bands;
-
-  if (isLoading) return <div className={card}>Loading band data…</div>;
-
-  // HARDENED GUARD
-  if (
-    !bands ||
-    typeof bands !== "object" ||
-    Array.isArray(bands) ||
-    Object.keys(bands).length === 0
-  ) {
-    return <div className={card}>No band data.</div>;
+export default function BandTable({ bands }: BandTableProps) {
+  if (!bands || bands.length === 0) {
+    return (
+      <div className={card}>
+        <h2 className={panelTitle}>Band Conditions</h2>
+        <p className="text-neutral-400 text-sm mt-2">No band data available.</p>
+      </div>
+    );
   }
-
-  const entries = Object.entries(bands) as [string, any][];
 
   return (
     <div className={card}>
-      <h2 className={panelTitle}>Band Data</h2>
-      <table className="mt-3 w-full text-sm text-neutral-300">
+      <h2 className={panelTitle}>Band Conditions</h2>
+
+      <table className="w-full mt-3 text-sm text-neutral-300">
         <thead>
-          <tr className="border-b border-neutral-800">
-            <th className="text-left py-1">Band</th>
-            <th className="text-left py-1">DX (%)</th>
-            <th className="text-left py-1">SNR (dB)</th>
-            <th className="text-left py-1">Absorption (dB)</th>
+          <tr className="text-neutral-400 border-b border-neutral-700">
+            <th className="py-1 text-left">Band</th>
+            <th className="py-1 text-left">SNR</th>
+            <th className="py-1 text-left">DX</th>
+            <th className="py-1 text-left">Noise</th>
+            <th className="py-1 text-left">Status</th>
           </tr>
         </thead>
-        <tbody>
-          {entries.map(([band, b]) => {
-            const dx = Math.round(b.dx ?? 0);
-            const dxColor =
-              dx >= 70
-                ? "text-emerald-400"
-                : dx >= 40
-                ? "text-amber-400"
-                : dx >= 20
-                ? "text-red-400"
-                : "text-neutral-500";
 
-            return (
-              <tr key={band} className="border-b border-neutral-900">
-                <td className="py-1 text-neutral-200">{band}</td>
-                <td className={`py-1 font-semibold ${dxColor}`}>{dx}%</td>
-                <td className="py-1">{b.snr?.toFixed(1)}</td>
-                <td className="py-1">{b.absorption?.toFixed(1)}</td>
-              </tr>
-            );
-          })}
+        <tbody>
+          {bands.map((row, idx) => (
+            <tr key={idx} className="border-b border-neutral-800">
+              <td className="py-1">{row.band}</td>
+              <td className="py-1">{row.snr}</td>
+              <td className="py-1">{row.dx}</td>
+              <td className="py-1">{row.noise}</td>
+              <td className="py-1">{row.status ?? "—"}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
