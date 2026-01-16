@@ -1,4 +1,5 @@
 import "./globals.css";
+import ClientWrapper from "./ClientWrapper";
 
 export const metadata = {
   title: "HF Dashboard",
