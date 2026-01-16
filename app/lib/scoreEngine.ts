@@ -18,12 +18,14 @@ export function computePropagationScore(bands: any): number {
   let total = 0;
   let weightSum = 0;
 
-  for (const [bandName, stats] of Object.entries(bands)) {
-    const dx = stats.dx ?? 0;
-    const w = weights[bandName] ?? 1;
-    total += dx * w;
-    weightSum += w;
-  }
+  for (const [bandName, stats] of Object.entries(
+  bands as Record<string, { dx: number }>
+)) {
+  const dx = stats.dx ?? 0;
+  const w = weights[bandName] ?? 1;
+  total += dx * w;
+  weightSum += w;
+}
 
   return Math.round(total / weightSum);
 }
