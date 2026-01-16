@@ -21,8 +21,20 @@ import DXPathsPanel from "./components/DXPathsPanel";
 import { useSummaryData } from "./hooks/useSummaryData";
 
 export default function Home() {
-  const { data, isLoading, isError } = useSummaryData();
+  const { data, isLoading } = useSummaryData();
 
+  if (isLoading || !data) {
+    return (
+      <main className="p-4 text-neutral-400">
+        Loading…
+      </main>
+    );
+  }
+
+  // ---------------------------------------------
+  // AI Commentary Fetch
+  // ---------------------------------------------
+  // (rest of your component continues unchanged)
   // ---------------------------------------------
   // AI Commentary Fetch
   // ---------------------------------------------
