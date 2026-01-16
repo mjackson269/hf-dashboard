@@ -1,7 +1,5 @@
 "use client";
 
-console.log("FORECAST STEP 0:", data?.forecast24h?.[0]);
-
 import React from "react";
 
 // Mapping regions to representative bands (simplified MUF logic)
