@@ -181,7 +181,7 @@ Rules:
   // ---------------------------------------------------------
   let aiResponse: string | null = null;
 
-  for (const provider of ["groq", "deepseek"]) {
+  for (const provider of ["groq", "deepseek"] as ProviderName[]) {
     try {
       aiResponse = await tryProvider(provider, systemPrompt, payload);
       break;
