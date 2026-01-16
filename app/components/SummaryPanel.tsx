@@ -1,42 +1,59 @@
 "use client";
 
-import { useSummaryData } from "../hooks/useSummaryData";
+import React from "react";
+import SeverityBadge from "./SeverityBadge";
 import { card, panelTitle } from "../lib/designSystem";
+import { useSummaryData } from "../hooks/useSummaryData";
 
-export default function AICommentaryPanel() {
+export default function SummaryPanel() {
   const { data, isLoading } = useSummaryData();
-  const commentary = data?.commentary;
 
-  if (isLoading || !commentary) {
-    return <div className={card}>Loading commentary…</div>;
+  if (isLoading || !data) {
+    return <div className={card}>Loading summary…</div>;
+  }
+
+  const commentary = data.commentary;
+
+  if (!commentary) {
+    return <div className={card}>No commentary available.</div>;
   }
 
   return (
     <div className={card}>
-      <h2 className={panelTitle}>AI Propagation Commentary</h2>
+      <h2 className={panelTitle}>Propagation Summary</h2>
 
-      <div className="mt-3 space-y-3 text-sm text-neutral-300">
-        <div>
-          <strong className="text-slate-200">Quick Take:</strong>{" "}
-          {commentary.quickTake}
-        </div>
+      {/* Quick Take */}
+      <div className="mt-2 text-sm text-neutral-300">
+        <SeverityBadge severity={commentary.severity} />{" "}
+        {commentary.quickTake}
+      </div>
 
-        {commentary.trendInsights?.length > 0 && (
-          <div>
-            <strong className="text-slate-200">Trend Insights:</strong>
-            <ul className="list-disc ml-5 mt-1">
-              {commentary.trendInsights.map((line: string, i: number) => (
-                <li key={i}>{line}</li>
+      {/* Trend Insights */}
+      {Array.isArray(commentary.trendInsights) &&
+        commentary.trendInsights.length > 0 && (
+          <div className="mt-4">
+            <h3 className="font-semibold text-neutral-200 text-sm">
+              Trend Insights
+            </h3>
+            <ul className="list-disc ml-5 mt-1 text-neutral-400 text-sm">
+              {commentary.trendInsights.map((insight, idx) => (
+                <li key={idx}>{insight}</li>
               ))}
             </ul>
           </div>
         )}
 
-        {commentary.bandNotes && (
-          <div>
-            <strong className="text-slate-200">Band Notes:</strong>
-            <ul className="list-disc ml-5 mt-1">
-              {Object.entries(commentary.bandNotes).map(([band, note]) => (
+      {/* Band Notes */}
+      {commentary.bandNotes &&
+        Object.keys(commentary.bandNotes).length > 0 && (
+          <div className="mt-4">
+            <h3 className="font-semibold text-neutral-200 text-sm">
+              Band Notes
+            </h3>
+            <ul className="list-disc ml-5 mt-1 text-neutral-400 text-sm">
+              {Object.entries(
+                commentary.bandNotes as Record<string, string>
+              ).map(([band, note]) => (
                 <li key={band}>
                   <strong>{band}:</strong> {note}
                 </li>
@@ -45,13 +62,33 @@ export default function AICommentaryPanel() {
           </div>
         )}
 
-        {commentary.operatorAdvice && (
-          <div>
-            <strong className="text-slate-200">Operator Advice:</strong>{" "}
-            {commentary.operatorAdvice}
+      {/* Advice */}
+      {commentary.advice && (
+        <div className="mt-4">
+          <h3 className="font-semibold text-neutral-200 text-sm">Advice</h3>
+          <p className="text-neutral-400 text-sm mt-1">
+            {commentary.advice}
+          </p>
+        </div>
+      )}
+
+      {/* Alerts */}
+      {Array.isArray(commentary.alerts) &&
+        commentary.alerts.length > 0 && (
+          <div className="mt-4">
+            <h3 className="font-semibold text-neutral-200 text-sm">
+              Alerts
+            </h3>
+            <ul className="list-disc ml-5 mt-1 text-neutral-400 text-sm">
+              {commentary.alerts.map((alert, idx) => (
+                <li key={idx}>
+                  <strong>{alert.type}:</strong> {alert.description} (
+                  {alert.severity})
+                </li>
+              ))}
+            </ul>
           </div>
         )}
-      </div>
     </div>
   );
 }
