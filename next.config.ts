@@ -1,15 +1,20 @@
-import type { NextConfig } from "next";
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // React Compiler is top-level in Next.js 16
+  reactCompiler: false,
 
-const nextConfig: NextConfig = {
-  typedRoutes: true, // moved out of experimental
+  // Explicitly disable Turbopack and use Webpack
+  turbopack: false,
 
-  experimental: {
-    serverActions: {
-      allowedOrigins: ["*"],
-    },
-  },
-
-  pageExtensions: ["ts", "tsx", "js", "jsx"],
+  // Ensure a single React runtime across server + client
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      react: require.resolve("react"),
+      "react-dom": require.resolve("react-dom")
+    };
+    return config;
+  }
 };
 
-export default nextConfig;
+module.exports = nextConfig;
