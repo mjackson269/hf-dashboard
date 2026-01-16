@@ -1,68 +1,61 @@
 export function generateDeterministicAlerts(current: any) {
   const alerts: any[] = [];
 
-  const { kp, sfiEstimated, muf, bands } = current;
+  if (!current) return alerts;
 
-  // --- Geomagnetic Alerts ---
+  const { kp, sfiEstimated, bands } = current;
+
+  // ---------------------------------------------------------
+  // Kp-based alerts
+  // ---------------------------------------------------------
   if (kp >= 5) {
     alerts.push({
-      type: `Geomagnetic Storm — Kp ${kp}`,
-      description: "Storm-level geomagnetic activity. Expect HF degradation, especially on low bands.",
+      type: "Geomagnetic Storm",
+      description: "Kp index at storm levels. Expect degraded HF conditions.",
       severity: "high",
       issued: new Date().toISOString(),
     });
   } else if (kp >= 4) {
     alerts.push({
-      type: `Geomagnetic Unsettled — Kp ${kp}`,
-      description: "Unsettled geomagnetic field. Mid/high bands may fluctuate.",
+      type: "Disturbed Conditions",
+      description: "Kp index elevated. HF reliability may be reduced.",
       severity: "medium",
       issued: new Date().toISOString(),
     });
   }
 
-  // --- MUF Alerts ---
-  if (muf < 10) {
+  // ---------------------------------------------------------
+  // SFI-based alerts
+  // ---------------------------------------------------------
+  if (sfiEstimated < 80) {
     alerts.push({
-      type: "MUF Collapse",
-      description: "Maximum usable frequency is low. High bands likely closed.",
-      severity: "high",
-      issued: new Date().toISOString(),
-    });
-  } else if (muf < 15) {
-    alerts.push({
-      type: "Low MUF",
-      description: "High-band DX limited. 20m and below favoured.",
-      severity: "medium",
+      type: "Low Solar Flux",
+      description: "SFI is low. Expect weaker MUF and reduced DX potential.",
+      severity: "low",
       issued: new Date().toISOString(),
     });
   }
 
-  // --- Band-Specific Alerts ---
+  // ---------------------------------------------------------
+  // Band noise / SNR alerts
+  // ---------------------------------------------------------
   if (bands) {
-  for (const [band, info] of Object.entries(
-    bands as Record<string, { snr: number }>
-  )) {
-    if (info.snr < 10) {
-      alerts.push({
-        type: `${band} — High Noise Floor`,
-        description: `${band} showing elevated noise. Expect reduced readability.`,
-        severity: "medium",
-        issued: new Date().toISOString(),
-      });
-    }
-  }
-}
-
-      if (info.mufSupport === "closed") {
+    for (const [band, info] of Object.entries(
+      bands as Record<string, { snr: number }>
+    )) {
+      if (info.snr < 10) {
         alerts.push({
-          type: `${band} Closed`,
-          description: `${band} propagation closed due to insufficient MUF.`,
-          severity: "low",
+          type: `${band} — High Noise Floor`,
+          description: `${band} showing elevated noise. Expect reduced readability.`,
+          severity: "medium",
           issued: new Date().toISOString(),
         });
       }
     }
   }
 
+  // ---------------------------------------------------------
+  // Final return
+  // ---------------------------------------------------------
   return alerts;
 }
