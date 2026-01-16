@@ -39,15 +39,19 @@ export function generateDeterministicAlerts(current: any) {
 
   // --- Band-Specific Alerts ---
   if (bands) {
-    for (const [band, info] of Object.entries(bands)) {
-      if (info.snr < 10) {
-        alerts.push({
-          type: `${band} — High Noise Floor`,
-          description: `${band} showing elevated noise. Expect reduced readability.`,
-          severity: "medium",
-          issued: new Date().toISOString(),
-        });
-      }
+  for (const [band, info] of Object.entries(
+    bands as Record<string, { snr: number }>
+  )) {
+    if (info.snr < 10) {
+      alerts.push({
+        type: `${band} — High Noise Floor`,
+        description: `${band} showing elevated noise. Expect reduced readability.`,
+        severity: "medium",
+        issued: new Date().toISOString(),
+      });
+    }
+  }
+}
 
       if (info.mufSupport === "closed") {
         alerts.push({
