@@ -1,25 +1,22 @@
 "use client";
 
-import { card, panelTitle } from "../lib/designSystem";
-import { useCommentaryData } from "../hooks/useCommentaryData";
+import React from "react";
 
-export default function CommentaryPanel() {
-  const { data, isLoading } = useCommentaryData();
+interface CommentaryPanelProps {
+  commentary: any; // or a proper type if you want to tighten it later
+}
 
-  if (isLoading) {
-    return <div className={card}>Generating commentary…</div>;
-  }
+export default function CommentaryPanel({ commentary }: CommentaryPanelProps) {
+  if (!commentary) return null;
 
-  if (!data) {
-    return (
-      <div className={card}>
-        <h2 className={panelTitle}>Propagation Commentary</h2>
-        <p className="text-neutral-300 mt-2">
-          Commentary unavailable. Try again shortly.
-        </p>
-      </div>
-    );
-  }
+  return (
+    <div className="...">
+      {/* your existing JSX */}
+    </div>
+  );
+}
+
+
 
   const {
     quickTake,
