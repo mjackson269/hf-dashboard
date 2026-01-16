@@ -6,10 +6,12 @@ import { useSummaryData } from "../hooks/useSummaryData";
 export default function BandTable() {
   const { data, isLoading } = useSummaryData();
 
-  if (isLoading) return <div className={card}>Loading band data…</div>;
-  if (!data || !data.bands) return <div className={card}>No band data.</div>;
+  const bands = data?.forecast24h?.[0]?.bands;
 
-  const entries = Object.entries(data.bands) as [string, any][];
+  if (isLoading) return <div className={card}>Loading band data…</div>;
+  if (!bands || typeof bands !== "object") return <div className={card}>No band data.</div>;
+
+  const entries = Object.entries(bands) as [string, any][];
 
   return (
     <div className={card}>
@@ -25,21 +27,22 @@ export default function BandTable() {
         </thead>
         <tbody>
           {entries.map(([band, b]) => {
+            const dx = Math.round(b.dx ?? 0);
             const dxColor =
-              b.dx >= 70
+              dx >= 70
                 ? "text-emerald-400"
-                : b.dx >= 40
+                : dx >= 40
                 ? "text-amber-400"
-                : b.dx >= 20
+                : dx >= 20
                 ? "text-red-400"
                 : "text-neutral-500";
 
             return (
               <tr key={band} className="border-b border-neutral-900">
                 <td className="py-1 text-neutral-200">{band}</td>
-                <td className={`py-1 font-semibold ${dxColor}`}>{b.dx}%</td>
-                <td className="py-1">{b.snr}</td>
-                <td className="py-1">{b.absorption}</td>
+                <td className={`py-1 font-semibold ${dxColor}`}>{dx}%</td>
+                <td className="py-1">{b.snr?.toFixed(1)}</td>
+                <td className="py-1">{b.absorption?.toFixed(1)}</td>
               </tr>
             );
           })}
