@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { computeHybridBandScore } from "@/app/lib/hybridDxEngine";
 import { BAND_FREQ } from "@/app/lib/propagation/bandScoring";
+import { computePropagationScore } from "@/app/lib/scoreEngine";
 
-// -----------------------------
-// Timeout wrapper (never hangs)
-// -----------------------------
+// ----------------------------------------------------
+// Utility: fetch with timeout (prevents hanging requests)
+// ----------------------------------------------------
 async function fetchWithTimeout(url: string, ms: number) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ms);
@@ -15,9 +16,8 @@ async function fetchWithTimeout(url: string, ms: number) {
     const res = await fetch(url, { signal: controller.signal, cache: "no-store" });
     clearTimeout(timeout);
     return res;
-  } catch (err) {
+  } catch {
     clearTimeout(timeout);
-    console.warn("Timeout or fetch error for:", url);
     return null;
   }
 }
@@ -26,39 +26,39 @@ export function useSummaryData() {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const FT8_INTERVAL = 60000;      // 60s
+  const WSPR_INTERVAL = 60000;     // 60s
+  const CURRENT_INTERVAL = 300000; // 5 min
+
   useEffect(() => {
-    async function load() {
+    let t1: NodeJS.Timeout;
+    let t2: NodeJS.Timeout;
+    let t3: NodeJS.Timeout;
+
+    async function loadAll() {
       try {
-        // -----------------------------------------
-        // 1. Load deterministic forecast (required)
-        //-----------------------------------------
+        // ----------------------------------------------------
+        // 1. Deterministic baseline forecast
+        // ----------------------------------------------------
         const currentRes = await fetch("/api/current", { cache: "no-store" });
         const current = await currentRes.json();
 
-        // -----------------------------------------
-        // 2. Load WSPR (optional, timeout protected)
-        //-----------------------------------------
+        // ----------------------------------------------------
+        // 2. WSPR (optional)
+        // ----------------------------------------------------
         const wsprRes = await fetchWithTimeout("/api/wspr", 3000);
         const wspr = wsprRes ? await wsprRes.json() : null;
         const wsprEurope = wspr?.Europe ?? null;
 
-        if (!wsprEurope) {
-          console.warn("Hybrid scoring: WSPR unavailable");
-        }
-
-        // -----------------------------------------
-        // 3. Load FT8 (optional, timeout protected)
-        //-----------------------------------------
+        // ----------------------------------------------------
+        // 3. FT8 (optional)
+        // ----------------------------------------------------
         const ft8Res = await fetchWithTimeout("/api/ft8", 3000);
         const ft8 = ft8Res ? await ft8Res.json() : null;
 
-        if (!ft8) {
-          console.warn("Hybrid scoring: FT8 unavailable");
-        }
-
-        // -----------------------------------------
-        // 4. Build hybrid forecast (safe)
-        //-----------------------------------------
+        // ----------------------------------------------------
+        // 4. Hybrid forecast (deterministic + WSPR + FT8)
+        // ----------------------------------------------------
         let hybridForecast = current.forecast24h;
 
         try {
@@ -70,10 +70,7 @@ export function useSummaryData() {
 
             for (const band of bands) {
               const base = step.bands?.[band];
-              if (!base) {
-                console.warn("Missing band in forecast step:", band);
-                continue;
-              }
+              if (!base) continue;
 
               const hybrid = computeHybridBandScore(band, {
                 snr: base.snr,
@@ -92,35 +89,67 @@ export function useSummaryData() {
               };
             }
 
-            return {
-              ...step,
-              bands: hybridBands,
-              muf,
-            };
+            return { ...step, bands: hybridBands, muf };
           });
         } catch (err) {
-          console.error("Hybrid scoring failed:", err);
-          hybridForecast = current.forecast24h; // fallback
+          console.warn("Hybrid scoring failed:", err);
         }
 
-        // -----------------------------------------
-        // 5. Final data payload (EXPOSE HYBRID LAYERS)
-        //-----------------------------------------
+        // ----------------------------------------------------
+        // 5. Snapshot values (safe, never zero unless truly zero)
+        // ----------------------------------------------------
+        const safeMuf =
+          hybridForecast?.[0]?.muf ??
+          current.forecast24h?.[0]?.muf ??
+          current.muf ??
+          0;
+
+        const safeSf =
+          current.sfEstimated ??
+          current.sfiEstimated ?? // fallback for NOAA naming
+          0;
+
+        const safeKp = current.kp ?? 0;
+
+        // ----------------------------------------------------
+        // 6. Compute propagation score (shared scoring engine)
+        // ----------------------------------------------------
+        const currentBands = hybridForecast?.[0]?.bands ?? {};
+        const score = computePropagationScore(currentBands);
+
+        // ----------------------------------------------------
+        // 7. Final payload
+        // ----------------------------------------------------
         setData({
           ...current,
           forecast24h: hybridForecast,
           ft8Bands: ft8 ?? null,
           wsprBands: wsprEurope ?? null,
+          snapshot: {
+            muf: safeMuf,
+            sf: safeSf,
+            kp: safeKp,
+          },
+          score, // ⭐ now dynamic and correct
         });
-
-      } catch (err) {
-        console.error("Failed to load summary data:", err);
       } finally {
         setIsLoading(false);
       }
     }
 
-    load();
+    // Initial load
+    loadAll();
+
+    // Polling intervals
+    t1 = setInterval(loadAll, CURRENT_INTERVAL);
+    t2 = setInterval(loadAll, WSPR_INTERVAL);
+    t3 = setInterval(loadAll, FT8_INTERVAL);
+
+    return () => {
+      clearInterval(t1);
+      clearInterval(t2);
+      clearInterval(t3);
+    };
   }, []);
 
   return { data, isLoading };

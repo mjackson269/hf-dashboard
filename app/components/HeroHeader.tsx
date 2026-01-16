@@ -6,24 +6,42 @@ import { useSummaryData } from "../hooks/useSummaryData";
 import QuickReadPanel from "./QuickReadPanel";
 
 export default function HeroHeader() {
-  const { data } = useSummaryData();
+  const { data, isLoading } = useSummaryData();
   const [quickReadOpen, setQuickReadOpen] = useState(false);
 
+  // ----------------------------------------------------
+  // NEW: Guard to prevent rendering before data exists
+  // ----------------------------------------------------
+  if (isLoading || !data || !data.snapshot) {
+    return (
+      <section className="relative mb-8">
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-950/80 p-6 text-cyan-200">
+          Loading live propagation snapshot…
+        </div>
+      </section>
+    );
+  }
+
+  // Snapshot values (safe)
+  const muf = data.snapshot.muf;
+  const sf = data.snapshot.sf;
+  const kp = data.snapshot.kp;
+
   // Live propagation score (0–100)
-  const score = data?.score ?? 0;
+  const score = data.score ?? 0;
 
   return (
     <section className="relative mb-8">
       <div className="relative overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950/80 shadow-xl">
 
-        {/* --- Atmospheric Glow Layers --- */}
+        {/* Glow layers */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.22),transparent_70%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,rgba(59,130,246,0.16),transparent_70%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(15,23,42,0.75),rgba(0,0,0,0.95))]" />
         </div>
 
-        {/* --- World Map Silhouette --- */}
+        {/* World map */}
         <div
           className="
             pointer-events-none
@@ -37,16 +55,16 @@ export default function HeroHeader() {
           "
         />
 
-        {/* --- Scanline Texture --- */}
+        {/* Scanline */}
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[length:100%_2px] opacity-20" />
 
-        {/* --- Main Content --- */}
+        {/* Main content */}
         <div className="relative z-10 flex flex-col gap-6 px-6 py-6 md:flex-row md:items-center md:justify-between md:gap-10 md:px-10 md:py-8">
 
-          {/* Left Column */}
+          {/* Left column */}
           <div className="max-w-xl space-y-3 md:space-y-4">
 
-            {/* DX Operator Badge */}
+            {/* Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/40 bg-black/60 px-3 py-1 text-xs font-medium tracking-wide text-cyan-100 shadow-[0_0_25px_rgba(34,211,238,0.4)]">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]" />
               <span className="uppercase text-[0.7rem]">DX-Operator Console</span>
@@ -54,7 +72,7 @@ export default function HeroHeader() {
               <span className="text-[0.7rem] text-cyan-200/80">HF Propagation · Live Intelligence Feed</span>
             </div>
 
-            {/* Title + Subtitle */}
+            {/* Title + subtitle */}
             <div className="space-y-2 md:space-y-3">
               <h1 className="text-balance text-2xl font-semibold tracking-tight text-sky-50 sm:text-3xl md:text-4xl">
                 HF conditions, decoded for{" "}
@@ -69,7 +87,7 @@ export default function HeroHeader() {
               </p>
             </div>
 
-            {/* Feature Pills */}
+            {/* Feature pills */}
             <div className="flex flex-wrap items-center gap-3 text-[0.72rem] text-slate-300/80">
               <div className="inline-flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-950/40 px-2.5 py-1">
                 <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-emerald-500/10 text-[0.6rem] text-emerald-300">
@@ -87,10 +105,10 @@ export default function HeroHeader() {
             </div>
           </div>
 
-          {/* Right Column */}
+          {/* Right column */}
           <div className="mt-4 flex w-full flex-col gap-3 md:mt-0 md:w-72">
 
-            {/* Live Propagation Snapshot */}
+            {/* Live snapshot */}
             <div className="rounded-xl border border-cyan-500/40 bg-black/60 px-4 py-3 shadow-[0_0_35px_rgba(34,211,238,0.35)]">
               <div className="mb-1 flex items-center justify-between text-[0.7rem] text-cyan-100/90">
                 <span className="uppercase tracking-[0.16em] text-cyan-200/90">Live Propagation Snapshot</span>
@@ -120,9 +138,25 @@ export default function HeroHeader() {
                   <div className="mt-1 text-[0.65rem] text-cyan-100/70">Last 90 minutes improving</div>
                 </div>
               </div>
+
+              {/* Snapshot values */}
+              <div className="mt-3 grid grid-cols-3 gap-2 text-[0.7rem] text-cyan-200/80">
+                <div>
+                  <span className="block text-cyan-300/90">MUF</span>
+                  <span className="text-cyan-100">{muf.toFixed(1)} MHz</span>
+                </div>
+                <div>
+                  <span className="block text-cyan-300/90">Solar Flux</span>
+                  <span className="text-cyan-100">{sf}</span>
+                </div>
+                <div>
+                  <span className="block text-cyan-300/90">Kp Index</span>
+                  <span className="text-cyan-100">{kp}</span>
+                </div>
+              </div>
             </div>
 
-            {/* Quick Read Button */}
+            {/* Quick Read button */}
             <button
               onClick={() => setQuickReadOpen(true)}
               className="inline-flex items-center justify-between gap-2 rounded-lg border border-slate-700/80 bg-slate-950/60 px-3.5 py-2 text-[0.78rem] text-slate-100 shadow-lg shadow-black/40 transition hover:border-cyan-400/70 hover:bg-slate-900/80 hover:text-cyan-50"
@@ -141,7 +175,7 @@ export default function HeroHeader() {
         </div>
       </div>
 
-      {/* Quick Read Modal */}
+      {/* Quick Read modal */}
       {quickReadOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-xl border border-slate-700 bg-slate-900 shadow-xl">

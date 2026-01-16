@@ -17,16 +17,18 @@ export async function GET() {
     const solar = await res.json();
     const latest = solar[solar.length - 1];
 
-    const sfiEstimated = latest.ssn * 1.4; // or your preferred SFI source
+    // FIXED: renamed to sfEstimated
+    const sfEstimated = latest.ssn * 1.4;
+
     const kp = 2; // TODO: replace with real Kp fetch
 
-    const mufCurve = generateDeterministicMUF(sfiEstimated, kp);
+    const mufCurve = generateDeterministicMUF(sfEstimated, kp);
     const currentHour = new Date().getUTCHours();
     const muf = mufCurve[currentHour].muf;
 
     const bands = generateDeterministicDX({
       muf,
-      sfi: sfiEstimated,
+      sfi: sfEstimated,
       kp,
     });
 
@@ -35,13 +37,13 @@ export async function GET() {
       muf: m.muf,
       bands: generateDeterministicDX({
         muf: m.muf,
-        sfi: sfiEstimated,
+        sfi: sfEstimated,
         kp,
       }),
     }));
 
     return NextResponse.json({
-      sfiEstimated,
+      sfEstimated,   // FIXED
       kp,
       muf,
       bands,

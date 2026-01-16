@@ -23,7 +23,7 @@ export default function PropagationScore() {
 
   return (
     <div className={card}>
-      <h2 className={panelTitle}>Propagation Score</h2>
+      <h2 className={panelTitle}>HF Outlook Score</h2>
       <p className="mt-2 text-3xl font-bold text-white">{score}/100</p>
       <p className="mt-1 text-neutral-300">{label} HF DX conditions overall.</p>
     </div>
