@@ -9,13 +9,14 @@ export default function QuickTake() {
   if (isLoading || !data) return null;
   if (isError) return null;
 
-  console.log("Severity from API:", data.severity);
+  // Use hybrid-scored fields instead of deterministic
+  const severity = data.hybridSeverity;
+  const quickTake = data.hybridQuickTake;
 
   return (
     <div className="mb-4 text-sm">
-      <SeverityBadge severity={data.severity} />
-      {" "}
-      <span className="text-neutral-300">{data.quickTake}</span>
+      <SeverityBadge severity={severity} />{" "}
+      <span className="text-neutral-300">{quickTake}</span>
     </div>
   );
 }

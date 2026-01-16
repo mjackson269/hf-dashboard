@@ -12,18 +12,33 @@ export default function StatusBar() {
       </div>
     );
 
-  if (!data || !data.bands)
+  // Use hybrid-scored current hour
+  const bands = data?.forecast24h?.[0]?.bands;
+  const prevBands = data?.forecast24h?.[1]?.bands;
+
+  if (!bands)
     return (
       <div className="w-full text-xs text-neutral-400 py-1 px-3 border-t border-neutral-800">
         No band data.
       </div>
     );
 
-  const entries = Object.entries(data.bands) as [string, any][];
-  const best = entries.sort((a, b) => b[1].dx - a[1].dx)[0];
+  const entries = Object.entries(bands).map(([band, stats]: any) => {
+    const dxNow = Math.round(stats.dx ?? 0);
+    const dxPrev = Math.round(prevBands?.[band]?.dx ?? dxNow);
+    const delta = dxNow - dxPrev;
+
+    let trend = "➖";
+    if (delta > 3) trend = "📈";
+    else if (delta < -3) trend = "📉";
+
+    return { band, dxNow, trend };
+  });
+
+  const best = entries.sort((a, b) => b.dxNow - a.dxNow)[0];
 
   const text = best
-    ? `Best band: ${best[0]} — DX probability ${best[1].dx}%`
+    ? `Best band: ${best.band} ${best.trend} — ${best.dxNow}% DX`
     : "No band data";
 
   return (

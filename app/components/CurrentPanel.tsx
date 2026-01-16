@@ -14,12 +14,10 @@ export default function CurrentPanel() {
     );
   }
 
-  // -----------------------------------------
-  // Extract the current hour’s hybrid bands
-  // -----------------------------------------
-  const bands = data?.forecast24h?.[0]?.bands;
+  const currentBands = data?.forecast24h?.[0]?.bands;
+  const previousBands = data?.forecast24h?.[1]?.bands;
 
-  if (!bands) {
+  if (!currentBands) {
     return (
       <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-4 text-neutral-300">
         No band data available.
@@ -27,25 +25,19 @@ export default function CurrentPanel() {
     );
   }
 
-  // -----------------------------------------
-  // Compute best band (highest DX score)
-  // -----------------------------------------
-  const entries = Object.entries(bands);
+  const entries = Object.entries(currentBands).map(([band, stats]: any) => {
+    const dxNow = Math.round(stats.dx ?? 0);
+    const dxPrev = Math.round(previousBands?.[band]?.dx ?? dxNow);
+    const delta = dxNow - dxPrev;
 
-  const best = entries
-    .filter(([_, v]) => typeof v.dx === "number")
-    .sort((a, b) => b[1].dx - a[1].dx)[0];
+    let trend = "➖";
+    if (delta > 3) trend = "📈";
+    else if (delta < -3) trend = "📉";
 
-  // If hybrid engine hasn’t populated yet
-  if (!best) {
-    return (
-      <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-4 text-neutral-300">
-        Waiting for hybrid scoring…
-      </div>
-    );
-  }
+    return { band, dxNow, dxPrev, delta, trend, ...stats };
+  });
 
-  const [bestBand, bestStats] = best;
+  const best = entries.sort((a, b) => b.dxNow - a.dxNow)[0];
 
   return (
     <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-4 text-neutral-300">
@@ -53,7 +45,6 @@ export default function CurrentPanel() {
         Current HF Conditions
       </h2>
 
-      {/* MUF / SF / Kp snapshot */}
       <p className="mb-3 text-sm">
         <strong className="text-white">MUF:</strong>{" "}
         {data.snapshot.muf.toFixed(1)} MHz ·{" "}
@@ -61,21 +52,37 @@ export default function CurrentPanel() {
         <strong className="text-white">Kp:</strong> {data.snapshot.kp}
       </p>
 
-      {/* Best band */}
-      <p className="mt-2 text-sm">
-        <strong className="text-white">Best band now:</strong> {bestBand} with{" "}
-        {bestStats.dx}% DX probability (SNR {bestStats.snr} dB, absorption{" "}
-        {bestStats.absorption} dB).
-      </p>
+      <div className="mb-3 p-3 rounded-md bg-neutral-900 border border-neutral-800">
+        <div className="flex justify-between items-center">
+          <strong className="text-white text-base">
+            Best band now: {best.band}
+          </strong>
+          <span className="text-sm opacity-80">{best.trend}</span>
+        </div>
 
-      {/* Optional: show all bands */}
-      <div className="mt-4 text-xs text-neutral-400">
+        <p className="text-sm mt-1">
+          {best.dxNow}% DX · SNR {best.snr?.toFixed(1)} dB · Abs{" "}
+          {best.absorption?.toFixed(1)} dB
+        </p>
+
+        <p className="text-xs opacity-70 mt-1 leading-tight">
+          Det {Math.round(best.dxDeterministic)}% · WSPR{" "}
+          {Math.round(best.dxWspr)}% · FT8 {Math.round(best.dxFt8)}%
+        </p>
+      </div>
+
+      <div className="text-xs text-neutral-400">
         <strong className="text-neutral-200">Band breakdown:</strong>
-        <ul className="mt-1 space-y-1">
-          {entries.map(([band, stats]) => (
-            <li key={band}>
-              <span className="text-neutral-300">{band}:</span>{" "}
-              {stats.dx}% DX · SNR {stats.snr} dB · Abs {stats.absorption} dB
+        <ul className="mt-2 space-y-1">
+          {entries.map((b) => (
+            <li key={b.band}>
+              <span className="text-neutral-300 font-medium">
+                {b.band} {b.trend}
+              </span>
+              <div className="ml-2">
+                {b.dxNow}% DX · SNR {b.snr?.toFixed(1)} dB · Abs{" "}
+                {b.absorption?.toFixed(1)} dB
+              </div>
             </li>
           ))}
         </ul>
