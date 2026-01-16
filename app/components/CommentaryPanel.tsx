@@ -1,22 +1,24 @@
 "use client";
 
 import React from "react";
+import { card, panelTitle } from "../lib/designSystem";
 
 interface CommentaryPanelProps {
-  commentary: any; // or a proper type if you want to tighten it later
+  commentary: {
+    quickTake?: string;
+    trendInsights?: string[];
+    bandNotes?: Record<string, string>;
+    advice?: string;
+    alerts?: Array<{
+      type: string;
+      description: string;
+      severity: string;
+    }>;
+  };
 }
 
 export default function CommentaryPanel({ commentary }: CommentaryPanelProps) {
   if (!commentary) return null;
-
-  return (
-    <div className="...">
-      {/* your existing JSX */}
-    </div>
-  );
-}
-
-
 
   const {
     quickTake,
@@ -24,7 +26,7 @@ export default function CommentaryPanel({ commentary }: CommentaryPanelProps) {
     bandNotes = {},
     advice,
     alerts = [],
-  } = data;
+  } = commentary;
 
   return (
     <div className={card}>
@@ -52,11 +54,13 @@ export default function CommentaryPanel({ commentary }: CommentaryPanelProps) {
         <div className="mt-4">
           <h3 className="font-semibold text-neutral-200 mb-1">Band Notes</h3>
           <ul className="list-disc list-inside text-neutral-300 space-y-1">
-            {Object.entries(bandNotes).map(([band, note]: any) => (
-              <li key={band}>
-                <strong className="text-white">{band}:</strong> {note}
-              </li>
-            ))}
+            {Object.entries(bandNotes as Record<string, string>).map(
+              ([band, note]) => (
+                <li key={band}>
+                  <strong className="text-white">{band}:</strong> {note}
+                </li>
+              )
+            )}
           </ul>
         </div>
       )}
@@ -74,7 +78,7 @@ export default function CommentaryPanel({ commentary }: CommentaryPanelProps) {
         <div className="mt-4">
           <h3 className="font-semibold text-neutral-200 mb-1">Alerts</h3>
           <ul className="list-disc list-inside text-neutral-300 space-y-1">
-            {alerts.map((alert: any, idx: number) => (
+            {alerts.map((alert, idx) => (
               <li key={idx}>
                 <strong className="text-white">{alert.type}:</strong>{" "}
                 {alert.description}{" "}
