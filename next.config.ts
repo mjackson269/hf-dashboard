@@ -1,15 +1,8 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  // Explicitly disable Turbopack and use Webpack
-  turbopack: false,
+import type { NextConfig } from "next";
 
-  // No webpack aliasing — let Next.js handle React resolution
-  webpack: (config) => {
-    return config;
-  },
-
-  // Disable React Compiler (optional)
+const nextConfig: NextConfig = {
   reactCompiler: false,
+  turbopack: {}
 };
 
-module.exports = nextConfig;
+export default nextConfig;
