@@ -1,4 +1,5 @@
 import Footer from "./components/Footer";
+import ClientClock from "./components/ClientClock";
 
 export default function Page() {
   return (
@@ -14,6 +15,7 @@ export default function Page() {
       >
         Baseline test — visible
       </div>
+      <ClientClock />
       <Footer />
     </>
   );
