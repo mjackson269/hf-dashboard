@@ -2,6 +2,8 @@ import Footer from "./components/Footer";
 import ClientClock from "./components/ClientClock";
 import StatusBar from "./components/StatusBar";
 import HeroHeader from "./components/HeroHeader";
+import BestBandsNow from "./components/BestBandsNow";
+
 
 export default function Page() {
   return (
@@ -21,6 +23,7 @@ export default function Page() {
       <ClientClock />
       <StatusBar />
       <HeroHeader />
+      <BestBandsNow />
       <Footer />
     </>
   );
