@@ -1,3 +1,5 @@
+"use client";
+
 import { subtleText } from "../lib/designSystem";
 import ClientClock from "@/app/components/ClientClock";
 
