@@ -5,9 +5,6 @@ import { computeHybridBandScore } from "@/app/lib/hybridDxEngine";
 import { BAND_FREQ } from "@/app/lib/propagation/bandScoring";
 import { computePropagationScore } from "@/app/lib/scoreEngine";
 
-// ----------------------------------------------------
-// Utility: fetch with timeout (prevents hanging requests)
-// ----------------------------------------------------
 async function fetchWithTimeout(url: string, ms: number) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ms);
@@ -23,12 +20,12 @@ async function fetchWithTimeout(url: string, ms: number) {
 }
 
 export function useSummaryData() {
-  const [data, setData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<any>({
+    snapshot: null,
+    score: null,
+  });
 
-  const FT8_INTERVAL = 60000;      // 60s
-  const WSPR_INTERVAL = 60000;     // 60s
-  const CURRENT_INTERVAL = 300000; // 5 min
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let t1: NodeJS.Timeout;
@@ -37,34 +34,23 @@ export function useSummaryData() {
 
     async function loadAll() {
       try {
-        // ----------------------------------------------------
-        // 1. Deterministic baseline forecast
-        // ----------------------------------------------------
         const currentRes = await fetch("/api/current", { cache: "no-store" });
+        if (!currentRes.ok) throw new Error("current API failed");
+
         const current = await currentRes.json();
 
-        // ----------------------------------------------------
-        // 2. WSPR (optional)
-        // ----------------------------------------------------
         const wsprRes = await fetchWithTimeout("/api/wspr", 3000);
         const wspr = wsprRes ? await wsprRes.json() : null;
         const wsprEurope = wspr?.Europe ?? null;
 
-        // ----------------------------------------------------
-        // 3. FT8 (optional)
-        // ----------------------------------------------------
         const ft8Res = await fetchWithTimeout("/api/ft8", 3000);
         const ft8 = ft8Res ? await ft8Res.json() : null;
 
-        // ----------------------------------------------------
-        // 4. Hybrid forecast (deterministic + WSPR + FT8)
-        // ----------------------------------------------------
-        let hybridForecast = current.forecast24h;
+        let hybridForecast = current.forecast24h ?? [];
 
         try {
           const bands = Object.keys(BAND_FREQ) as (keyof typeof BAND_FREQ)[];
-
-          hybridForecast = current.forecast24h.map((step: any) => {
+          hybridForecast = hybridForecast.map((step: any) => {
             const muf = step.muf;
             const hybridBands: any = {};
 
@@ -91,35 +77,33 @@ export function useSummaryData() {
 
             return { ...step, bands: hybridBands, muf };
           });
-        } catch (err) {
-          console.warn("Hybrid scoring failed:", err);
-        }
+        } catch {}
 
-        // ----------------------------------------------------
-        // 5. Snapshot values (safe, never zero unless truly zero)
-        // ----------------------------------------------------
         const safeMuf =
           hybridForecast?.[0]?.muf ??
           current.forecast24h?.[0]?.muf ??
           current.muf ??
-          0;
+          null;
 
         const safeSf =
           current.sfEstimated ??
-          current.sfiEstimated ?? // fallback for NOAA naming
-          0;
+          current.sfiEstimated ??
+          null;
 
-        const safeKp = current.kp ?? 0;
+        const safeKp = current.kp ?? null;
 
-        // ----------------------------------------------------
-        // 6. Compute propagation score (shared scoring engine)
-        // ----------------------------------------------------
+        const snapshotReady =
+          safeMuf !== null &&
+          safeSf !== null &&
+          safeKp !== null;
+
+        if (!snapshotReady) {
+          return; // keep loading state
+        }
+
         const currentBands = hybridForecast?.[0]?.bands ?? {};
         const score = computePropagationScore(currentBands);
 
-        // ----------------------------------------------------
-        // 7. Final payload
-        // ----------------------------------------------------
         setData({
           ...current,
           forecast24h: hybridForecast,
@@ -130,20 +114,20 @@ export function useSummaryData() {
             sf: safeSf,
             kp: safeKp,
           },
-          score, // ⭐ now dynamic and correct
+          score,
         });
-      } finally {
+
         setIsLoading(false);
+      } catch {
+        // keep loading state
       }
     }
 
-    // Initial load
     loadAll();
 
-    // Polling intervals
-    t1 = setInterval(loadAll, CURRENT_INTERVAL);
-    t2 = setInterval(loadAll, WSPR_INTERVAL);
-    t3 = setInterval(loadAll, FT8_INTERVAL);
+    t1 = setInterval(loadAll, 300000);
+    t2 = setInterval(loadAll, 60000);
+    t3 = setInterval(loadAll, 60000);
 
     return () => {
       clearInterval(t1);
