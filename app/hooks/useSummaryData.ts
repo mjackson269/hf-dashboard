@@ -29,33 +29,49 @@ export function useSummaryData() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log("🔄 useSummaryData mounted");
+
     let t1: NodeJS.Timeout;
     let t2: NodeJS.Timeout;
     let t3: NodeJS.Timeout;
 
     async function loadAll() {
+      console.log("🚀 Running loadAll()");
+
       try {
-        // -----------------------------
+        // ----------------------------------------------------
         // 1. Fetch CURRENT snapshot
-        // -----------------------------
+        // ----------------------------------------------------
+        console.log("📡 Fetching /api/current …");
         const currentRes = await fetch("/api/current", { cache: "no-store" });
-        if (!currentRes.ok) throw new Error("current API failed");
+
+        if (!currentRes.ok) {
+          console.error("❌ /api/current failed:", currentRes.status);
+          return;
+        }
 
         const current = await currentRes.json();
+        console.log("✅ /api/current:", current);
 
-        // -----------------------------
-        // 2. Fetch WSPR + FT8 (timeout)
-        // -----------------------------
+        // ----------------------------------------------------
+        // 2. Fetch WSPR + FT8 (with timeout)
+        // ----------------------------------------------------
+        console.log("📡 Fetching /api/wspr …");
         const wsprRes = await fetchWithTimeout("/api/wspr", 3000);
         const wspr = wsprRes ? await wsprRes.json() : null;
+        console.log("📡 WSPR:", wspr);
+
         const wsprEurope = wspr?.Europe ?? null;
 
+        console.log("📡 Fetching /api/ft8 …");
         const ft8Res = await fetchWithTimeout("/api/ft8", 3000);
         const ft8 = ft8Res ? await ft8Res.json() : null;
+        console.log("📡 FT8:", ft8);
 
-        // -----------------------------
+        // ----------------------------------------------------
         // 3. Build hybrid forecast
-        // -----------------------------
+        // ----------------------------------------------------
+        console.log("⚙️ Building hybrid forecast …");
         let hybridForecast = current.forecast24h ?? [];
 
         try {
@@ -87,11 +103,15 @@ export function useSummaryData() {
 
             return { ...step, bands: hybridBands, muf };
           });
-        } catch {}
+        } catch (err) {
+          console.error("❌ Hybrid forecast error:", err);
+        }
 
-        // -----------------------------
-        // 4. Safe snapshot extraction
-        // -----------------------------
+        console.log("✅ Hybrid forecast:", hybridForecast);
+
+        // ----------------------------------------------------
+        // 4. Extract safe snapshot values
+        // ----------------------------------------------------
         const safeMuf =
           hybridForecast?.[0]?.muf ??
           current.forecast24h?.[0]?.muf ??
@@ -105,25 +125,23 @@ export function useSummaryData() {
 
         const safeKp = current.kp ?? null;
 
-        const snapshotReady =
-          safeMuf !== null &&
-          safeSf !== null &&
-          safeKp !== null;
+        console.log("📊 Snapshot:", { safeMuf, safeSf, safeKp });
 
-        if (!snapshotReady) {
-          return; // keep loading state
-        }
-
-        // -----------------------------
+        // ----------------------------------------------------
         // 5. Compute numeric score
-        // -----------------------------
+        // ----------------------------------------------------
         const currentBands = hybridForecast?.[0]?.bands ?? {};
         const score = computePropagationScore(currentBands);
 
-        // -----------------------------
-        // 6. RESTORE AI INTELLIGENCE CALL
-        // -----------------------------
+        console.log("📈 Numeric score:", score);
+
+        // ----------------------------------------------------
+        // 6. AI INTELLIGENCE CALL (DeepSeek)
+        // ----------------------------------------------------
+        console.log("🤖 Preparing AI summary payload …");
+
         let intel = null;
+
         try {
           const summaryPayload = {
             muf: safeMuf,
@@ -134,24 +152,38 @@ export function useSummaryData() {
             score,
           };
 
-          const intelRes = await fetch("/api/ai", {
+          console.log("📡 CALLING AI SUMMARY…", summaryPayload);
+
+          // ⭐ FIXED: Correct endpoint path
+          const intelRes = await fetch("/api/ai/quickread", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ summary: summaryPayload }),
           });
 
+          console.log("📡 AI RESPONSE STATUS:", intelRes.status);
+
           if (intelRes.ok) {
             const json = await intelRes.json();
+            console.log("📡 AI RESPONSE JSON:", json);
             intel = json.text ?? null;
+          } else {
+            console.error("❌ AI endpoint returned error:", intelRes.status);
           }
         } catch (err) {
-          console.error("AI summary error:", err);
+          console.error("❌ AI summary error:", err);
           intel = null;
         }
 
-        // -----------------------------
+        // ----------------------------------------------------
         // 7. Final state update
-        // -----------------------------
+        // ----------------------------------------------------
+        console.log("💾 Updating state with:", {
+          snapshot: { safeMuf, safeSf, safeKp },
+          score,
+          intel,
+        });
+
         setData({
           ...current,
           forecast24h: hybridForecast,
@@ -163,12 +195,13 @@ export function useSummaryData() {
             kp: safeKp,
           },
           score,
-          intel, // ⭐ restored AI intelligence feed
+          intel,
         });
 
         setIsLoading(false);
-      } catch {
-        // keep loading state
+        console.log("✅ State updated, loading complete");
+      } catch (err) {
+        console.error("❌ Summary load error:", err);
       }
     }
 

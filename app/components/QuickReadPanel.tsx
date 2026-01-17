@@ -6,41 +6,19 @@ import { useSummaryData } from "../hooks/useSummaryData";
 export default function QuickReadPanel({ onClose }: { onClose: () => void }) {
   const [hydrated, setHydrated] = useState(false);
   const { data, isLoading } = useSummaryData();
-  const [aiText, setAiText] = useState<string>("Generating operator briefing…");
 
   useEffect(() => {
     setHydrated(true);
   }, []);
 
   // Prevent server/client mismatch
-  if (!hydrated || isLoading || !data?.current) {
+  if (!hydrated || isLoading || !data?.snapshot) {
     return (
       <div className="p-6 text-slate-300">
         Loading live intelligence…
       </div>
     );
   }
-
-  useEffect(() => {
-    if (!data) return;
-
-    async function fetchAI() {
-      try {
-        const res = await fetch("/api/ai/quickread", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ summary: data }),
-        });
-
-        const json = await res.json();
-        setAiText(json.text ?? "No AI response available.");
-      } catch (err) {
-        setAiText("AI service unavailable.");
-      }
-    }
-
-    fetchAI();
-  }, [data]);
 
   return (
     <div className="p-6 text-slate-200 space-y-6">
@@ -57,7 +35,7 @@ export default function QuickReadPanel({ onClose }: { onClose: () => void }) {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-cyan-300">AI Operator Briefing</h3>
         <p className="text-sm text-slate-300 whitespace-pre-line">
-          {aiText}
+          {data.intel ?? "No AI intelligence available."}
         </p>
       </div>
     </div>
