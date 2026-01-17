@@ -3,26 +3,26 @@
 import { useEffect, useState } from "react";
 
 export default function ClientClock() {
-  const [now, setNow] = useState("");
-  const [hydrated, setHydrated] = useState(false);
+  const [now, setNow] = useState<string | null>(null);
 
   useEffect(() => {
-    setHydrated(true);
-
     const update = () => {
-      setNow(new Date().toLocaleString());
+      setNow(
+        new Date().toLocaleString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })
+      );
     };
 
     update();
     const id = setInterval(update, 1000);
-
     return () => clearInterval(id);
   }, []);
 
-  if (!hydrated) {
-    // Render identical markup on server and client
-    return <span></span>;
-  }
+  // Render nothing on the server AND on the first client render
+  if (now === null) return null;
 
-  return <span>{now}</span>;
+  return <span suppressHydrationWarning>{now}</span>;
 }
