@@ -2,7 +2,7 @@ import Footer from "./components/Footer";
 import ClientClock from "./components/ClientClock";
 import StatusBar from "./components/StatusBar";
 import HeroHeader from "./components/HeroHeader";
-import BestBandsNow from "./components/BestBandsNow";
+import BestBandsNow from "./components/BestBandNow";
 
 
 export default function Page() {
@@ -23,7 +23,7 @@ export default function Page() {
       <ClientClock />
       <StatusBar />
       <HeroHeader />
-      <BestBandsNow />
+      <BestBandNow />
       <Footer />
     </>
   );
