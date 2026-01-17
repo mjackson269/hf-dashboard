@@ -23,6 +23,7 @@ export function useSummaryData() {
   const [data, setData] = useState<any>({
     snapshot: null,
     score: null,
+    intel: null,
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -34,11 +35,17 @@ export function useSummaryData() {
 
     async function loadAll() {
       try {
+        // -----------------------------
+        // 1. Fetch CURRENT snapshot
+        // -----------------------------
         const currentRes = await fetch("/api/current", { cache: "no-store" });
         if (!currentRes.ok) throw new Error("current API failed");
 
         const current = await currentRes.json();
 
+        // -----------------------------
+        // 2. Fetch WSPR + FT8 (timeout)
+        // -----------------------------
         const wsprRes = await fetchWithTimeout("/api/wspr", 3000);
         const wspr = wsprRes ? await wsprRes.json() : null;
         const wsprEurope = wspr?.Europe ?? null;
@@ -46,6 +53,9 @@ export function useSummaryData() {
         const ft8Res = await fetchWithTimeout("/api/ft8", 3000);
         const ft8 = ft8Res ? await ft8Res.json() : null;
 
+        // -----------------------------
+        // 3. Build hybrid forecast
+        // -----------------------------
         let hybridForecast = current.forecast24h ?? [];
 
         try {
@@ -79,6 +89,9 @@ export function useSummaryData() {
           });
         } catch {}
 
+        // -----------------------------
+        // 4. Safe snapshot extraction
+        // -----------------------------
         const safeMuf =
           hybridForecast?.[0]?.muf ??
           current.forecast24h?.[0]?.muf ??
@@ -101,9 +114,44 @@ export function useSummaryData() {
           return; // keep loading state
         }
 
+        // -----------------------------
+        // 5. Compute numeric score
+        // -----------------------------
         const currentBands = hybridForecast?.[0]?.bands ?? {};
         const score = computePropagationScore(currentBands);
 
+        // -----------------------------
+        // 6. RESTORE AI INTELLIGENCE CALL
+        // -----------------------------
+        let intel = null;
+        try {
+          const summaryPayload = {
+            muf: safeMuf,
+            sf: safeSf,
+            kp: safeKp,
+            bands: currentBands,
+            forecast: hybridForecast,
+            score,
+          };
+
+          const intelRes = await fetch("/api/ai", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ summary: summaryPayload }),
+          });
+
+          if (intelRes.ok) {
+            const json = await intelRes.json();
+            intel = json.text ?? null;
+          }
+        } catch (err) {
+          console.error("AI summary error:", err);
+          intel = null;
+        }
+
+        // -----------------------------
+        // 7. Final state update
+        // -----------------------------
         setData({
           ...current,
           forecast24h: hybridForecast,
@@ -115,6 +163,7 @@ export function useSummaryData() {
             kp: safeKp,
           },
           score,
+          intel, // ⭐ restored AI intelligence feed
         });
 
         setIsLoading(false);
@@ -125,6 +174,7 @@ export function useSummaryData() {
 
     loadAll();
 
+    // Refresh intervals
     t1 = setInterval(loadAll, 300000);
     t2 = setInterval(loadAll, 60000);
     t3 = setInterval(loadAll, 60000);
