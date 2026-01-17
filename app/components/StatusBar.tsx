@@ -1,9 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useSummaryData } from "../hooks/useSummaryData";
 
 export default function StatusBar() {
+  const [hydrated, setHydrated] = useState(false);
   const { data, isLoading } = useSummaryData();
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  // Prevent server/client mismatch
+  if (!hydrated) return null;
 
   if (isLoading)
     return (
@@ -12,11 +21,9 @@ export default function StatusBar() {
       </div>
     );
 
-  // Hybrid-scored current hour
   const bands = data?.forecast24h?.[0]?.bands;
   const prevBands = data?.forecast24h?.[1]?.bands;
 
-  // HARDENED GUARD: ensure bands is a non-empty object
   if (!bands || typeof bands !== "object" || Object.keys(bands).length === 0)
     return (
       <div className="w-full text-xs text-neutral-400 py-1 px-3 border-t border-neutral-800">
