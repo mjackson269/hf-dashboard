@@ -14,14 +14,21 @@ export default function HeroHeader() {
     setHydrated(true);
   }, []);
 
-  // Safe, stable condition for rendering the real snapshot
-  const shouldRenderSnapshot =
+  // Extract snapshot safely
+  const snapshot = data?.snapshot;
+
+  // Snapshot is only valid when all values are real numbers
+  const snapshotReady =
     hydrated &&
     !isLoading &&
-    data?.snapshot;
+    snapshot &&
+    typeof snapshot === "object" &&
+    typeof snapshot.muf === "number" &&
+    typeof snapshot.sf === "number" &&
+    typeof snapshot.kp === "number";
 
   // Fallback stays visible until snapshot is truly ready
-  if (!shouldRenderSnapshot) {
+  if (!snapshotReady) {
     return (
       <section className="relative mb-8">
         <div className="rounded-2xl border border-neutral-800 bg-neutral-950/80 p-6 text-cyan-200">
@@ -31,15 +38,15 @@ export default function HeroHeader() {
     );
   }
 
-  // Snapshot is now safe to use
-  const muf = data.snapshot.muf;
-  const sf = data.snapshot.sf;
-  const kp = data.snapshot.kp;
+  // Safe to use snapshot now
+  const muf = snapshot.muf;
+  const sf = snapshot.sf;
+  const kp = snapshot.kp;
   const score = data.score ?? 0;
 
   return (
     <section className="relative mb-8">
-      {/* Your full existing JSX goes here */}
+      {/* Your full JSX goes here */}
       {/* Nothing else needs to change */}
     </section>
   );
