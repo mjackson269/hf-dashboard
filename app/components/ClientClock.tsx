@@ -21,7 +21,6 @@ export default function ClientClock() {
     return () => clearInterval(id);
   }, []);
 
-  // Render nothing on the server AND on the first client render
   if (now === null) return null;
 
   return <span suppressHydrationWarning>{now}</span>;
