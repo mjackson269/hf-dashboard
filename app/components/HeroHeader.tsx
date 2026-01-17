@@ -14,8 +14,14 @@ export default function HeroHeader() {
     setHydrated(true);
   }, []);
 
-  // Prevent server/client mismatch
-  if (!hydrated || isLoading || !data || !data.snapshot) {
+  // Safe, stable condition for rendering the real snapshot
+  const shouldRenderSnapshot =
+    hydrated &&
+    !isLoading &&
+    data?.snapshot;
+
+  // Fallback stays visible until snapshot is truly ready
+  if (!shouldRenderSnapshot) {
     return (
       <section className="relative mb-8">
         <div className="rounded-2xl border border-neutral-800 bg-neutral-950/80 p-6 text-cyan-200">
@@ -25,6 +31,7 @@ export default function HeroHeader() {
     );
   }
 
+  // Snapshot is now safe to use
   const muf = data.snapshot.muf;
   const sf = data.snapshot.sf;
   const kp = data.snapshot.kp;
@@ -32,7 +39,8 @@ export default function HeroHeader() {
 
   return (
     <section className="relative mb-8">
-      {/* ... your entire existing JSX unchanged ... */}
+      {/* Your full existing JSX goes here */}
+      {/* Nothing else needs to change */}
     </section>
   );
 }
