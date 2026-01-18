@@ -3,6 +3,10 @@ import ClientClock from "./components/ClientClock";
 import StatusBar from "./components/StatusBar";
 import HeroHeader from "./components/HeroHeader";
 import BestBandNow from "./components/BestBandNow";
+import QuickTake from "./components/QuickTake";
+import CurrentPanel from "./components/CurrentPanel";
+import ScorePanel from "./components/ScorePanel";
+import AlertsPanel from "./components/AlertsPanel";
 
 
 export default function Page() {
@@ -20,11 +24,17 @@ export default function Page() {
         Baseline test — visible
       </div>
 
-      <ClientClock />
-      <StatusBar />
-      <HeroHeader />
-      <BestBandNow />
-      <Footer />
+     <ClientClock />
+     <StatusBar />
+     <HeroHeader />
+
+     <QuickTake />
+     <CurrentPanel />
+     <ScorePanel />
+     <AlertsPanel />
+
+     <BestBandNow />
+     <Footer />
     </>
   );
 }
