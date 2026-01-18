@@ -1,8 +1,10 @@
-import Footer from "./components/Footer";
-import ClientClock from "./components/ClientClock";
-import StatusBar from "./components/StatusBar";
+"use client";
+
+import { useEffect, useState } from "react";
+import ForceCSS from "./force-css";
+
 import HeroHeader from "./components/HeroHeader";
-import BestBandNow from "./components/BestBandNow";
+import StatusBar from "./components/StatusBar";
 import QuickTake from "./components/QuickTake";
 import CurrentPanel from "./components/CurrentPanel";
 import ScorePanel from "./components/ScorePanel";
@@ -10,53 +12,50 @@ import AlertsPanel from "./components/AlertsPanel";
 import ForecastPanelV2 from "./components/ForecastPanelV2";
 import DXOutlook from "./components/DXOutlook";
 import DXHeatmap from "./components/DXHeatmap";
+import BestBandNow from "./components/BestBandNow";
 import DXPathsPanel from "./components/DXPathsPanel";
 import BandTable from "./components/BandTable";
 import CommentaryPanel from "./components/CommentaryPanel";
+import Footer from "./components/Footer";
+
 import { gridGap } from "./lib/designSystem";
 
 export default function Page() {
   return (
     <>
-      {/* Temporary baseline test */}
-      <div
-        style={{
-          padding: 40,
-          color: "lime",
-          backgroundColor: "black",
-          fontSize: 24,
-          fontWeight: "bold",
-        }}
-      >
-        Baseline test — visible
-      </div>
+      <ForceCSS />
 
-      {/* Header + Status */}
-      <ClientClock />
-      <StatusBar />
-      <HeroHeader />
-      <QuickTake />
+      <main className="min-h-screen bg-neutral-950 text-white p-6 flex flex-col">
 
-      {/* ⭐ Restored original grid layout */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${gridGap}`}>
-        <CurrentPanel />
-        <BestBandNow />
-        <ScorePanel />
+        {/* ⭐ Hero Header */}
+        <HeroHeader />
 
-        {/* Commentary can be re-enabled once logic is restored */}
-        {/* <CommentaryPanel commentary={commentary} /> */}
+        {/* Modern Status Bar */}
+        <StatusBar />
 
-        <AlertsPanel />
-        <ForecastPanelV2 />
-        <DXOutlook />
-        <DXHeatmap />
-        <DXPathsPanel />
+        {/* ⭐ Next component added */}
+        <QuickTake />
 
-        {/* Band table placeholder until data is wired back in */}
-        <BandTable bands={[]} />
-      </div>
+        {/* Main Grid (same layout as original) */}
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${gridGap}`}>
 
-      <Footer />
+          {/* Only the components that do NOT require data yet */}
+          <CurrentPanel />
+          <BestBandNow />
+          <ScorePanel />
+
+          {/* These will be added later once data is restored */}
+          {/* <CommentaryPanel commentary={commentary} /> */}
+          {/* <AlertsPanel /> */}
+          {/* <ForecastPanelV2 /> */}
+          {/* <DXOutlook /> */}
+          {/* <DXHeatmap /> */}
+          {/* <DXPathsPanel data={data} /> */}
+          {/* <BandTable bands={bandRows} /> */}
+        </div>
+
+        <Footer />
+      </main>
     </>
   );
 }
